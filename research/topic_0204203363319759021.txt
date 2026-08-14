@@ -1,0 +1,132 @@
+# Electron开发HarmonyOS应用知识地图
+
+如果您在其他平台未使用过 Electron 框架，不建议您直接使用该框架。您可以从自身软件跨平台演进整体规划上对跨平台框架进行选择。
+ 
+  Electron 是一个使用 JavaScript、HTML 和 CSS 构建桌面应用程序的框架。通过将 Chromium 和 Node.js 嵌入到它的二进制文件中，Electron 允许您维护一个 JavaScript 代码库，并创建可以在 Windows、macOS、Linux 和 HarmonyOS 上运行的跨平台应用程序。
+   目录
+           序号    开发阶段    章节    核心内容   
+       1    评估    API 文档    查阅可用 API   
+       2    准备    开发环境配置    接入Electron框架，运行Hello World   
+       3    开发    HAP构建与使用    应用基础配置、签名打包与安装   
+       4    开发    关键能力适配    Electron/Web/Node.js等跨平台通用能力API、
+    鸿蒙新增API及其他鸿蒙特性   
+       5    开发    跨语言扩展    三方库和ArkTS调用   
+       6    调试    调试与问题定位    调试和问题定位   
+     核心资源
+    Electron鸿蒙化仓库
+  HarmonyOS Electron源码仓库
+  HarmonyOS Electron Release构建包仓库
+  历史问题集
+      第一章 API 文档
+  1.1 API 文档入口
+  完整的 OHOS API 文档位于gitcode仓库docs/api/目录。
+  1.2 快速索引
+           资源    说明    路径   
+       全量 API 索引    共 1294 个 API    ./docs/api/index.md   
+       按模块浏览    66 个模块    ./docs/api/README.md   
+        第二章 开发环境配置
+               要求   
+       开发系统    Windows/MacOS   
+       开发工具    DevEco Studio   
+       运行系统    HarmonyOS   
+     在正式开始Electron应用鸿蒙化开发之前，可以先完成Hello World运行。对比其他平台npm install electron方式接入Electron框架，鸿蒙上需以libelectron.so、libadapter.so与ArkTS源码为核心接入Electron框架：
+           接入方式    参考资源   
+       直接获取electron-release构建包    搭建Electron HarmonyOS开发环境指导   
+       自行编译Electron源码    如何编译Electron源码
+    或编译源码构建应用   
+        第三章 HAP 包开发与部署
+  3.1 项目迁移基础方案
+           接入方式    参考资源    优点    缺点   
+       以DevEco Studio为核心（方案一）    已有Electron项目，如何适配HarmonyOS PC    - 项目结构更直观
+    - 一键打包运行
+    - 可调试ArkTS代码    - 需手动迁移业务代码
+    - 升级需替换的内容更多   
+       以VS Code/WebStorm等js开发工具为核心（方案二）    @electron-ohos/electron-builder使用说明
+    或electron鸿蒙项目升级文档    - 升级相对方便
+    - 一般无需关注ohos_hap    - 不支持自动签名
+    - 手动hdc install安装应用
+    - 支持配置项有限，部分配置项仍需
+    直接修改ohos_hap   
+     3.2 应用基础信息配置
+    定制自己的鸿蒙版应用
+   3.3 签名与权限
+    权限配置与签名申请
+   3.4 沙箱路径
+    应用沙箱路径与用户数据
+   3.5 安装与运行
+    运行已签名的hap包
+  Electron是否能在模拟器上运行
+   3.6 上架注意事项
+    HarmonyOS electron如何分发至PAD
+      第四章 关键能力适配
+  4.1 通用能力开发
+  窗口相关
+    electron窗口在HarmonyOS和windows上的区别
+  Harmony Electron如何实现窗口记忆持久化
+  HarmonyOS的悬浮窗是否支持拖拽改变大小
+  HarmonyOS electron如何设置窗口样式
+  HarmonyOS electron如何自定义标题栏（含三键）
+   文件相关
+    Electron应用上如何读写文件？
+  Electron上如何实现用户选择文件并复制到目标目录？
+  Harmony electron如何将文件拖拽到应用
+  Harmony Electron如何进行读取、保存及持久化文件
+   媒体能力
+    HarmonyOS electron如何进行截屏
+  HarmonyOS electron实现摄像头录制
+  HarmonyOS electron实现录屏
+  HarmonyOS electron实现录音
+   子进程相关
+    子进程相关的API使用方法
+  hnp打包与fork指导文档
+  HarmonyOS Electro应用执行命令行
+   其他
+    命令行参数支持说明
+  基于Electron开发跳转至其他应用 / 使用Deep Linking实现应用间跳转
+  Electron如何实现自定义托盘示例
+  Electron如何使用剪贴板
+  Electron自定义主题
+  Electron加载自定义字体
+  HarmonyOS Electron关于JIT功能的使用
+   4.2 鸿蒙扩展能力开发
+  新增API
+    Electron鸿蒙新增接口（不完整，完整API参考第一章 API文档各模块）
+   安全访问控制
+    Electron如何申请权限
+  坚盾守护模式
+   创新特性
+    Electron集成华为账号登录
+      第五章 跨语言扩展
+  5.1 环境配置
+    如何配置HarmonyOS Electron编译环境
+   5.2 三方库
+  综述
+    Electron使用三方库
+   编译方案
+           分类    集成方式    方案   
+       纯C/C++    node插件    Electron调用C/C++指导   
+       Node.js C/C++扩展    node插件    鸿蒙平台Electron加载Addon指导文档   
+       V8原生扩展    node插件    编译基于V8接口开发的三方库的addon   
+       Rust    node插件    Electron使用Rust三方库   
+       不限    二进制可执行程序（hnp）    Electron使用二进制可执行文件hnp   
+     其他典型三方库
+    Electron如何使用koffi三方库
+   5.3 ArkTS调用
+  方案
+    callArkTSFunction接口
+  Electron调用ETS指导文档 / Electron调用ArkTS指导
+   实例
+    Electron实现获取设备唯一标识符
+  Electron无UI快捷截屏（依赖系统UI）
+  Electron实现应用间跳转
+      第六章 调试与问题定位
+  6.1 应用调试
+    渲染进程调试
+  主进程调试
+   6.2 日志说明
+    Electron 框架日志说明
+   6.3 典型问题
+    Electron启动白屏如何定位
+  Electron使用so/node发生崩溃，栈顶在ld-musl-aarch64.so
+  Electron无法监听手指触摸滑动事件
+         本文档持续更新，欢迎提出宝贵建议。

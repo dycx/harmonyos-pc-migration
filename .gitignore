@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# 大文件（>100MB，GitHub 单文件限制）：Electron 鸿蒙版运行时
+# libelectron.so 约 160MB，无法提交到 GitHub。
+# 获取方式见 templates/README.md（华为云 CodeHub 官方包 或 本地保留副本）
+templates/ohos_electron_hap-main/electron/libs/arm64-v8a/libelectron.so
+
+# Node
+node_modules/
+
+# 构建产物
+build/
+dist/
+*.hap
+*.hsp
+*.app
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 日志
+*.log

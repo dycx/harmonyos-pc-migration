@@ -1,0 +1,200 @@
+Electron 跑鸿蒙 PC 上，这 4 个 API 的行为跟 Windows 完全不一样——但文档一行都没写
+TrisighT
+2026-07-04
+152
+阅读5分钟
+直接给结论：Electron 在鸿蒙 PC 上跑，底层 Chromium 被华为定制过，4 个你天天用的 API 表现跟 Windows 差别大到能让应用直接白屏。文档里一行字都没写。
+// 先看问题有多严重——这段代码在 Windows 上完美运行，鸿蒙 PC 上全崩
+import
+{ nativeTheme, shell, powerMonitor }
+from
+'electron'
+// 1. 平台判断——你以为会返回 'harmonyos'？
+console
+.
+log
+(process.
+platform
+)
+// 鸿蒙PC上输出: 'linux'
+// 2. 暗色模式——你以为能读取系统主题？
+console
+.
+log
+(nativeTheme.
+themeSource
+)
+// 鸿蒙PC上输出: undefined
+// 3. 打开外链——你以为会跳浏览器？
+shell.
+openExternal
+(
+'https://example.com'
+)
+// 鸿蒙PC上: 静默返回 undefined，什么也不发生
+// 4. 系统休眠监听——你以为跟 Windows 一样？
+powerMonitor.
+on
+(
+'suspend'
+,
+() =>
+console
+.
+log
+(
+'系统睡眠'
+))
+// 鸿蒙PC上: 用户息屏就触发，不是"睡眠"，后台任务还在跑
+我们团队花了两天排查这些问题——你猜怎么着，Electron 官方文档、鸿蒙开发者文档、Chromium 定制说明，没有一个地方提到这些行为差异。
+坑 1：process.platform 返回 'linux'，你的平台判断全走错
+鸿蒙 PC 的内核基于 Linux，Chromium 的 platform 检测看的是内核而非上层 OS。所以
+process.platform
+返回
+'linux'
+，不是
+'harmonyos'
+，也不是什么
+'freebsd'
+。
+这意味着你项目里所有
+if (process.platform === 'win32')
+分支在鸿蒙上走了
+'linux'
+路径——窗口尺寸计算、字体渲染策略、文件路径拼接，全都跟你的预期不一致。
+最坑的是文件路径。Windows 用反斜杠，Linux 用正斜杠。你的代码如果写了
+path.join(__dirname, 'data\\config.json')
+，在鸿蒙上跑出来的路径是
+/data\config.json
+——混搭了，文件找不到。
+// 正确做法：不要依赖 process.platform 判断鸿蒙，用自定义检测
+import
+*
+as
+fs
+from
+'fs'
+import
+*
+as
+path
+from
+'path'
+function
+getRealPlatform
+(
+):
+'windows'
+|
+'macos'
+|
+'harmonyos'
+|
+'linux'
+{
+if
+(process.
+platform
+===
+'linux'
+) {
+// 鸿蒙PC的特征：platform是linux + 存在鸿蒙专属标识
+const
+isHarmonyOS = !!process.
+env
+.
+HARMONYOS_VERSION
+||
+!!process.
+env
+.
+HOS_DEVICE_TYPE
+||
+(
+() =>
+{
+try
+{
+return
+fs.
+readFileSync
+(
+'/etc/os-release'
+,
+'utf8'
+).
+includes
+(
+'HarmonyOS'
+)
+}
+catch
+{
+return
+false
+}
+})()
+return
+isHarmonyOS ?
+'harmonyos'
+:
+'linux'
+}
+if
+(process.
+platform
+===
+'win32'
+)
+return
+'windows'
+if
+(process.
+platform
+===
+'darwin'
+)
+return
+'macos'
+return
+'linux'
+}
+// 使用示例
+const
+platform =
+getRealPlatform
+()
+const
+configPath = platform ===
+'harmonyos'
+|| platform ===
+'linux'
+? path.
+join
+(__dirname,
+'data'
+,
+'config.json'
+)
+// 正斜杠
+: path.
+join
+(__dirname,
+'data'
+,
+'config.json'
+)
+// Windows也兼容path.join
+说实话，我们一开始也没想到
+process.platform
+会返回
+'linux'
+——以为华为至少会加个自定义标识。结果没有，你得自己读
+/etc/os-release
+来判断。
+坑 2：nativeTheme 返回 undefined，暗色模式直接废了
+Electron 的
+nativeTheme
+API 在 Windows/macOS 上能读取系统暗色模式状态、监听切换事件。鸿蒙 PC 上？
+nativeTheme.themeSource
+返回

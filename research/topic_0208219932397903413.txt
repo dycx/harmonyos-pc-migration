@@ -1,0 +1,3 @@
+# 如何移植一个nodejs web app
+
+我是electerm（windows/Linux(Loongarch)/MacOS）（https://github.com/electerm/electerm）的作者，最近刚移植了electerm到Android，就是运行nodejs web服务，在webview里打开界面, harmony 可以实现吗，有计划支持吗

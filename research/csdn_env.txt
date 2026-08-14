@@ -1,0 +1,102 @@
+【Electron鸿蒙化】想要移植Electron到鸿蒙需要了解的事项（编译环境篇）_electron_CV狐狸少爷-Harmony PC 开发者社区
+Harmony PC 开发者社区
+Harmony PC 开发者社区
+首页
+技术专栏
+讨论广场
+精选文章
+社区资讯
+任务广场
+去全站搜索看看？
+登录
+登录社区云
+登录社区云，与社区用户共同成长
+CSDN账号登录
+Harmony PC 开发者社区
+邀请您加入社区
+立即加入
+欢迎加入社区
+取消
+确定
+欢迎加入社区
+取消
+确定
+Harmony PC 开发者社区
+【Electron鸿蒙化】想要移植Electron到鸿蒙需要了解的事项（编译环境篇）
+【Electron鸿蒙化】想要移植Electron到鸿蒙需要了解的事项（编译环境篇）
+CV狐狸少爷
+446人浏览 · 2025-11-20 10:34:53
+CV狐狸少爷
+·
+2025-11-20 10:34:53 发布
+哈喽大家好，这里 Aaron。今天想和大家聊聊 Electron 鸿蒙化的一些需要注意的事项，因为Electron鸿蒙化编译所需环境情况较为特殊，今天先简单分享关于调试编译的解决方案。
+无真机的解决方案
+在进行 Electron 鸿蒙化调试时，请务必使用 ARM 架构的 Mac 或鸿蒙 PC 进行调试。查看鸿蒙化模板下的
+electron/libs
+文件夹可以看到，目前模板只为 ARM 平台准备了
+.so
+库，但是如果此时在ARM Mac模拟器上运行pc应用依旧会黑屏。如果你在 x86 架构的 Mac 上进行调试，会发现产物会报parse error，但在鸿蒙真机上是可以正常运行的。
+据开发者联盟反馈，目前 6.0 以下的版本暂不支持 WebGL。在 M1 及以上 Mac 上可以通过禁用 GPU 加速的方式来调试，具体方法是在运行命令时加上
+--disable-gpu
+参数。这样可以顺利运行你的产物而不会黑屏。
+对于使用 x86 架构的 Windows 设备的读者，目前除了购买真机或使用 AGC 云调试外，没有其他方法可以直接调试。因此，建议购买鸿蒙真机或使用云服务进行调试。
+有真机的解决方案
+如果你拥有鸿蒙 PC 但没有 DevEco Studio 的内测权限，可以通过以下步骤进行调试：
+打开鸿蒙 PC 的开发者模式并启用无线调试。此时会在弹窗上输出本机 IP 地址和端口号。
+在 Windows 虚拟机中，利用命令
+hdc tconn localhost:端口号
+与鸿蒙端进行连接。
+最后，通过 DevEco Studio 将代码编译并推送至鸿蒙端进行调试。
+# electron
+# harmonyos
+# javascript
+Harmony PC 开发者社区
+赋能鸿蒙PC开发者，共建全场景原生生态，共享一次开发多端部署创新价值。
+加入社区
+更多推荐
+·
+OpenHarmony 移植 ProFTPD 服务器：构建 FTP服务端实践总结
+·
+鸿蒙 PC 上可用的 AI Agent 工具汇总（持续更新）
+·
+HarmonyOS鸿蒙PC开源MeldNext软件移植：开源工具Meld到鸿蒙PC实践总结
+OpenHarmony 移植 ProFTPD 服务器：构建 FTP服务端实践总结
+本文介绍将开源FTP服务器ProFTPD移植到OpenHarmony 5.0+设备的HAP应用中的方法。通过OHOS交叉编译工具链将ProFTPD及其依赖库（OpenSSL、libssh2、zlib）编译为arm64-v8a架构的原生库与可执行文件，再由NAPI桥接层启动ProFTPD子进程，实现ArkUI界面与FTP服务进程的分离运行。 移植的关键在于让FTP服务器适应OHOS沙箱环境，包括修改
+Harmony PC 开发者社区
+鸿蒙 PC 上可用的 AI Agent 工具汇总（持续更新）
+本文总结了主流AI编程工具在鸿蒙PC平台的获取方式，涵盖通用类和编程类工具。开源工具占多数，包括OpenClaw、Hermes Agent等，主要通过Harmonybrew、npm或应用市场安装。部分工具如Claude Code新版需要Linux兼容方案运行，而OpenCode目前只有第三方移植版本。闭源工具如Anthropic的Claude Code和Tencent的CodeBuddy Code
+Harmony PC 开发者社区
+HarmonyOS鸿蒙PC开源MeldNext软件移植：开源工具Meld到鸿蒙PC实践总结
+本文介绍了开源差异比较工具 Meld 从 Linux 桌面到鸿蒙 PC 的完整移植过程，重点分析了原始 Meld 与移植版本 MeldNext 的核心差异。MeldNext 使用 ArkTS 完全重写 UI 层，通过 N-API 桥接与交叉编译的 C/C++ 底层库交互，实现了在鸿蒙系统上的原生运行。技术架构上采用 ArkUI 框架、OpenGL ES 渲染和 HNP 运行时支持，构建方式也调整为
+Harmony PC 开发者社区
+446
+5
+0
+0
+扫一扫分享内容
+点击复制链接
+分享
+所有评论(0)
+您需要
+登录
+才能发言
+查看更多评论
+温馨提示：您尚未绑定手机号
+为遵守国家网络实名制规定，未绑定将限制内容发布与互动
+立即绑定
+欢迎加入社区
+取消
+确定
+CV狐狸少爷
+@BenedictC
+关注
+已为社区贡献1条内容
+回到
+顶部
+欢迎加入社区
+取消
+确定
+提供社区服务与技术支持
+提供社区服务与技术支持
+©1999-2023北京创新乐知网络技术有限公司
+京ICP备19004658号

@@ -1,0 +1,3 @@
+# 使用electron开发HarmonyOS PC应用，如何执行cmd命令？
+
+使用electron开发HarmonyOS PC应用，如何执行cmd命令？请以wmic为例说明。

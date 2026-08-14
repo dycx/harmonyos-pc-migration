@@ -1,0 +1,470 @@
+# Electron框架HarmonyOS开发指导
+
+一、引言
+  1.1 欢迎使用HarmonyOS Electron
+        欢迎您关注并使用HarmonyOS Electron！Electron框架是一个使用Web技术（HTML/CSS/JavaScript）构建跨平台桌面应用的框架。它结合了Chromium和Node.js，允许开发者用前端技术开发原生应用。现在HarmonyOS Electron基于HarmonyOS平台进行了适配，Electron开发者现在可以在HarmonyOS上更高效、更稳定地构建应用。
+  1.2 本篇文档目的
+        本文档旨在向开发者清晰地传达以下关键信息：
+        1. Electron在HarmonyOS上的官方支持状态。
+        2. 提供快速上手和深入使用HarmonyOS Electron的开发指导。
+        3. 我们强烈建议您在开始使用Electron进行开发前，仔细阅读本文档。
+  二、支持声明
+  2.1 支持确认
+        HarmonyOS Electron框架已获得HarmonyOS生态合作伙伴的支持，当前HarmonyOS Electron框架已开源，欢迎访问Electron 主仓 进行使用。
+  2.2开箱即用
+        开发者现在可以在HarmonyOS 5.0上放心地集成和使用HarmonyOS Electron进行项目开发。该框架已深度适配平台环境，并在HarmonyOS 5.0环境中经过严格测试与验证，确保核心功能的稳定运行和兼容性。
+  2.3 持续维护和演进
+        HarmonyOS Electron已于2025年6月开源至OH社区，我们将持续投入资源对HarmonyOS Electron进行维护、升级和优化，及时修复问题，并根据平台发展和开发者反馈引入新特性，确保其长期的生命力和竞争力。
+  三、HarmonyOS Electron开发指导
+  3.1 环境配置
+        操作系统：Ubuntu 22.04 磁盘空间：大于300G 内存：大于32G CPU架构：x86_64
+  3.2 编译源码构建应用
+  3.2.1 安装编译工具
+  （1）代码仓库网址
+        当前HarmonyOS Electron源码的开源代码地址为：https://gitcode.com/openharmony-sig/electron 。
+  
+  （2）为确保仓库中的大文件能拉取到本地，需安装工具git-lfs，ccache（注：该步骤仅在首次拉取代码时需要执行）
+  # 安装 git-lfs 拉取大文件。ccache 编译器缓存。
+$ sudo apt install git-lfs ccache  
+  （3）配置工具repo（注：该步骤仅在首次拉取代码时需要执行，执行该步骤前请确保已经配置好了python3环境）
+  # 下载码云repo工具(可以参考码云帮助中心：https://gitee.com/help/articles/4316)
+$ mkdir -p ~/bin
+$ curl https://gitee.com/oschina/repo/raw/fork_flow/repo-py3 > ~/bin/repo
+$ chmod a+x ~/bin/repo
+$ echo 'export PATH=~/bin/:$PATH' >> ~/.bashrc
+$ source ~/.bashrc
+$ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple requests  3.2.2 安装Node.js环境
+        Electron源码编译必须依赖Node.js才可执行，当前Node.js建议版本为20.18.1，低于该版本可能导致源码编译时出错。有三种可选的方式安装环境：
+  （1）通过Ubuntu标准软件库安装
+        此方式安装的node需要单独安装npm：
+  sudo apt update
+sudo apt install -y nodejs npm        查看版本号：
+  node -v  （2）通过NodeSource仓库安装
+        通过该方式安装的nodejs同时包含了node和npm，npm无需单独安装：
+  curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs        查看版本号：
+  node -v
+npm -v  （3）通过nvm安装
+        安装nvm：
+  git clone https://gitee.com/mirrors/nvm
+cd nvm
+bash install.sh
+source ~/.bashrc        查看nvm版本号：
+  nvm -v        安装nodejs（版本20.18.1，32位或64位，下面以32位为例），使用并查看版本号：
+  nvm install node 20.18.1 32
+nvm use 20.18.1
+node -v  3.2.3 从代码仓拉取Electron代码
+      （1）从代码仓克隆chromium-electron仓库
+  # 使用https拉取chromium-electron代码
+$ git clone -b master https://gitcode.com/openharmony-sig/electron.git
+
+# 执行命令`git lfs pull`，确保仓库中的大文件已经下载完成
+$ git lfs pull
+
+# 拉取chromium-electron对应的ohos chromium代码
+$ cd [path_to_chromium_electron] # 切换目录到chromium-electron根目录
+$ repo init -u https://gitcode.com/openharmony-tpc/manifest.git -b pc_chromium_132 -m pc_chromium_132_20251106.xml --no-repo-verify
+$ repo sync -c # 可以执行多次，以确保代码全部拉取成功
+$ repo forall -c 'git lfs pull' # 可执行多次，以确保大文件全部拉取成功
+
+# 应用chromium-electron的patch到ohos chromium
+$ cd [path_to_chromium_electron] # 切换目录到chromium-electron根目录
+$ pushd src
+$ find -name "*.git*" -exec rm -rf "{}" \;
+$ popd
+$ chmod +x override_files.sh
+$ ./override_files.sh      （2）运行 Electron目录/src/build/install-build-deps.sh脚本，安装编译所需的软件包（注：该步骤仅在首次拉取代码时需要执行）
+  $ sudo ./src/build/install-build-deps.sh --no-chromeos-fonts  
+  3.2.4 运行脚本electron_build.sh
+  $ ./electron_build.sh        Q：执行./electron_build.sh进行编译的时候为什么会出现如（cannot access 'rust-toolchain.tar.gz' : No such file or directory）类似的报错？
+        A：因为在执行./override_files.sh时，网络不稳定导致拉取rust-toolchain.tar.gz未成功。可以在执行repo forall -c 'git lfs pull后，从src/out/musl_64目录下，将rust-toolchain.tar.gz文件进行备份，随后，在执行./override_files.sh完成后，将备份的文件拷贝到原来的位置即可正常编译。
+  3.2.5 输出结果
+        编译完成后，会在src/out/musl_64目录下输出的编译产物文件如下：
+  • locales
+  • libelectron.so
+  • electron
+  • resources.pak
+  • chrome_100_percent.pak
+  • chrome_200_percent.pak
+  • icudtl.dat
+  • libadapter.so
+  • libffmpeg.so
+  • v8_context_snapshot.bin
+        可以通过如下脚本拷贝所需资源：
+  #!/bin/sh
+source_path=./Electron实际目录/src/out/musl_64
+destination_path=./electron
+if [ -d ${destination_path} ];then
+rm -rf ${destination_path}
+fi
+mkdir ${destination_path}
+cp ${source_path}/libelectron.so ${destination_path}
+cp ${source_path}/libffmpeg.so ${destination_path}
+cp ${source_path}/libadapter.so ${destination_path}
+cp ${source_path}/electron ${destination_path}
+cp ${source_path}/icudtl.dat ${destination_path}
+cp ${source_path}/v8_context_snapshot.bin ${destination_path}
+cp ${source_path}/chrome_100_percent.pak ${destination_path}
+cp ${source_path}/chrome_200_percent.pak ${destination_path}
+cp ${source_path}/resources.pak ${destination_path}
+mkdir ${destination_path}/locales
+cp ${source_path}/locales/zh-CN.pak ${destination_path}/locales
+cp ${source_path}/locales/en-US.pak ${destination_path}/locales        使用方法：将脚本保存为copy.sh放置于编译文件夹chromium文件夹同级，并执行，执行脚本后会将所需资源拷贝到同级的electron中（注：请参考修改为自己的source_path）。
+  3.3 HAP包构建与使用
+  3.3.1 编译未签名的HAP包
+  （1）准备Electron工程
+        Electron工程在源码目录src/ohos/app/文件夹内。将其下载下来，并在工程中创建electron/libs/arm64-v8a文件夹。
+  （2）拷贝源码编译产物至Electron工程中
+         使用编译产物中的libelectron.so、libffmpeg.so、libadapter.so替换electron/libs/arm64-v8a目录。将其它产物替换web_engine/src/main/resources/resfile目录下的资源。
+        注意：除源码编译产物外，另需libc++_shared.so位于HarmonyOS系统的sdk中，需将其一同拷贝到Electron工程的electron/libs/arm64-v8a目录下，libc++_shared.so路径为：electron源码根目录/src/ohos_sdk/openharmony/native/llvm/lib/aarch64-linux-ohos下。
+  （3）准备Electron工程的开始文件
+        如图所示，将Electron工程代码（若需要编译则需将编译产物）放置到web_engine/src/main/resources/resfile/resources/app目录下，图中所需要的resfile/resources/app目录下测试文件可在chromium-electron仓resources 目录 下找到。
+  
+  （4）编译并生成未签名的HAP包
+        so库与resfile都放入指定位置后，点击 Build -> Build Hap(s)/APP(s) -> Build Hap(s) 按钮编译生成未签名的HAP包或点击右上角运行按钮启动应用。
+  
+  
+        编译完成后，未签名的HAP包会被保存到ohos_hap/electron/build/default/outputs/default/下，文件名electron-default-unsigned.hap。
+  
+  3.3.2 签名与权限
+      （1）可以选择自动签名或手动签名方式，点击此处跳转配置调试签名 官方说明文档。
+      （2）权限配置文件位置：ohos_hap\web_engine\src\main\module.json5文件中requestPermissions字段，以下是当前声明的权限及说明，若需要了解更多权限，请点击跳转查看应用权限列表 官方说明文档。
+               权限名
+            权限说明
+            必要性
+       
+           ohos.permission.SYSTEM_FLOAT_WINDOW
+            允许应用使用全局悬浮窗的能力。
+            按需申请
+       
+           ohos.permission.INTERNET
+            允许使用Internet网络。
+            基础权限
+       
+           ohos.permission.GET_NETWORK_INFO
+            允许应用获取数据网络信息。
+            基础权限
+       
+           ohos.permission.ACCESS_CERT_MANAGER
+            允许应用进行查询证书及私有凭据等操作。
+            按需申请
+       
+           ohos.permission.RUNNING_LOCK
+            允许应用获取运行锁，保证应用在后台的持续运行
+            基础权限
+       
+           ohos.permission.PRINT
+            允许应用获取打印框架的能力。
+            按需申请
+       
+           ohos.permission.PREPARE_APP_TERMINATE
+            允许应用关闭前执行自定义的预关闭动作。
+            基础权限
+       
+           ohos.permission.ACCESS_BIOMETRIC
+            允许应用使用生物特征识别能力进行身份认证。
+            按需申请
+       
+           ohos.permission.FILE_ACCESS_PERSIST
+            允许应用支持持久化访问文件Uri。
+            基础权限
+       
+           ohos.permission.PRIVACY_WINDOW
+            允许应用将窗口设置为隐私窗口，禁止截屏录屏。
+            按需申请
+       
+           ohos.permission.WINDOW_TOPMOST
+            允许窗口置顶。
+            按需申请
+       
+           ohos.permission.READ_PASTEBOARD
+            允许应用读取剪贴板。
+            基础权限
+       
+           ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY
+            允许应用访问公共目录下Download目录及子目录，建议与ohos.permission.FILE_ACCESS_PERSIST同时申请。
+            按需申请
+       
+           ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY
+            允许应用访问公共目录下Documents目录及子目录，建议与ohos.permission.FILE_ACCESS_PERSIST同时申请。
+            按需申请
+       
+           ohos.permission.READ_WRITE_DESKTOP_DIRECTORY
+            允许应用访问公共目录下Desktop目录及子目录，建议与ohos.permission.FILE_ACCESS_PERSIST同时申请。
+            按需申请
+       
+           ohos.permission.LOCATION
+            允许应用获取设备位置信息。
+            按需申请
+       
+           ohos.permission.APPROXIMATELY_LOCATION
+            允许应用获取设备模糊位置信息。
+            按需申请
+       
+           ohos.permission.LOCATION_IN_BACKGROUND
+            允许应用在后台运行时获取设备位置信息。
+            按需申请
+       
+           ohos.permission.MICROPHONE
+            允许应用使用麦克风。
+            按需申请
+       
+           ohos.permission.CAMERA
+            允许应用使用相机。
+            按需申请
+       
+           ohos.permission.ACCESS_BLUETOOTH
+            允许应用接入蓝牙并使用蓝牙能力，例如配对、连接外围设备等。
+            按需申请
+       
+           ohos.permission.CUSTOM_SCREEN_CAPTURE
+            允许应用截取屏幕内容。
+            按需申请
+       
+     
+        点击查看申请应用权限 官方流程，权限申请邮件内容示例如下，请根据实际需要的授权申请权限。示例内容仅供参考：
+  
+        Electron中需要ACL签名的权限包括（如果未申请到证书导致签名未通过，可以暂时将这几个权限注释掉）：
+  "requestPermissions": [
+{
+  "name": "ohos.permission.SYSTEM_FLOAT_WINDOW"
+},
+...
+{
+  "name": "ohos.permission.READ_PASTEBOARD",
+  "reason": "$string:access_pasteboard",
+},
+...
+{
+"name": "ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY",
+"reason": "$string:reason_download",
+  "usedScene": {
+  "abilities": [
+  "FormAbility"
+  ],
+  "when":"always"
+  }
+},
+{
+"name": "ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY",
+"reason": "$string:reason_documents",
+  "usedScene": {
+  "abilities": [
+  "FormAbility"
+  ],
+  "when":"always"
+  }
+},
+{
+"name": "ohos.permission.READ_WRITE_DESKTOP_DIRECTORY",
+"reason": "$string:reason_desktop",
+  "usedScene": {
+  "abilities": [
+  "FormAbility"
+  ],
+  "when":"always"
+  }
+}
+]  3.3.3 运行已签名的HAP包
+        申请证书后在DevEco Studio中配置签名信息：
+  
+        配置完成后点击右上角的run按钮即可运行：
+  
+        或者配置完成后也可以在命令行中使用hdc命令行工具，执行命令安装HAP包。点击跳转hdc 工具官方指导。
+  hdc app install <已签名HAP包路径>
+# e.g: hdc app install electron-default-signed.hap  
+  3.3.4 HarmonyOS沙箱路径
+     应用沙箱路径和真实物理路径的对应关系
+        在应用沙箱路径下读写文件，经过映射转换，实际读写的是真实物理路径中的应用文件，应用沙箱路径与真实物理路径对应关系如下表所示，点击跳转查看应用沙箱目录 的官方说明文档。
+        其中<USERID>当前固定为100。
+               应用沙箱路径
+            物理路径
+            说明
+       
+           /data/storage/el1/bundle
+            /data/app/el1/bundle/public/<PACKAGENAME>
+            应用安装包目录
+       
+           /data/storage/el1/base
+            /data/app/el1/<USERID>/base/<PACKAGENAME>
+            应用el1级别加密数据目录
+       
+           /data/storage/el2/base
+            /data/app/el2/<USERID>/base/<PACKAGENAME>
+            应用el2级别加密数据目录
+       
+           /data/storage/el1/database
+            /data/app/el1/<USERID>/database/<PACKAGENAME>
+            应用el1级别加密数据库目录
+       
+           /data/storage/el2/database
+            /data/app/el2/<USERID>/database/<PACKAGENAME>
+            应用el2级别加密数据库目
+       
+           如图所示，用户数据需要存储在/data/storage/el2/base路径下，Electron默认的--user-data-dir为/data/storage/el2/base/files。
+  
+        查看用户数据需要通过系统文件管理器，如下图：
+  
+  
+  3.4 定制自己的HarmonyOS Electron应用
+   3.4.1 替换应用名
+        位置：ohos_hap\electron\src\main\resources\zh_CN\element\string.json，替换文件中的EntryAbility_label字段的值即可。
+  
+  3.4.2 替换图标
+        位置：ohos_hap\AppScope\resources\base\media
+  
+  3.4.3 资源替换
+        由于暂时没有编译环境，如果原有项目需要编译，例如实际上TS需要编译转换为JS再进行加载，则需要将编译产物JS文件放到项目web_engine/src/main/resources/resfile/resources/app中。
+        开源三方库可能遇到的问题：
+      （1）如果 npm库里面使用了addon（也就是用C++来写库给JS调用），未适配HarmonyOS平台无法正常使用。-- 参考sqlite3编译的适配方案进行适配
+       （2）如果 npm库里面使用了process.platform、os.type()等查平台的API来判断平台，未适配HarmonyOS平台无法正常使用。因为process.platform返回的是ohos，三方库不一定认识它。 -- 需要修改代码，适配OH平台
+       （3）如果 npm库里面有二进制文件（例如esbuild这样的库），无法正常使用。-- linux机器需要root权限，新PC走hnp方案
+  3.4.4 多实例配置
+        如果应用不需要使用多实例，请将如下图所示的"multiAppMode"配置去掉：
+  
+  四、HarmonyOS Electron特性说明
+  4.1 窗口模块
+  4.1.1 首窗口指定大小
+        如果应用需要指定首窗口启动时的窗口尺寸，需要修改工程内文件electron/src/main/module.json5，向abilities内增加metadata属性，如下，如果不需要居中则只需要指定width和height。
+  { 
+  "module": { 
+    "name": "pc_entry", 
+    "type": "entry", 
+    "srcEntry": "./ets/Application/AbilityStage.ets", 
+    "description": "$string:module_desc", 
+    "mainElement": "EntryAbility", 
+    "deviceTypes": [ 
+      "2in1" 
+    ], 
+    "deliveryWithInstall": true, 
+    "installationFree": false, 
+    "pages": "$profile:main_pages", 
+    "abilities": [ 
+      { 
+        "name": "EntryAbility", 
+        "srcEntry": "./ets/entryability/EntryAbility.ets", 
+        "description": "$string:EntryAbility_desc", 
+        "icon": "$media:app_icon", 
+        "label": "$string:EntryAbility_label", 
+        "startWindowIcon": "$media:app_icon", 
+        "startWindowBackground": "$color:start_window_background", 
+        "launchType": "specified", 
+        "removeMissionAfterTerminate": true, 
+        "exported": true, 
+        ***************** 添加到这里 ***************** 
+        "metadata": [ 
+            { 
+                "name": "ohos.ability.window.height", 
+                "value": "800" 
+            }, 
+            { 
+                "name": "ohos.ability.window.width", 
+                "value": "800", 
+            }, 
+            { 
+                "name": "ohos.ability.window.left", 
+                "value": "center" 
+            }, 
+            { 
+                "name": "ohos.ability.window.top", 
+                "value": "center", 
+            } 
+        ], 
+        ********************************************* 
+        "skills": [ 
+          { 
+            "entities": [ 
+              "entity.system.home", 
+              "entity.system.browsable" 
+            ], 
+            "actions": [ 
+              "action.system.home", 
+              "ohos.want.action.viewData" 
+            ], 
+            "uris": [] 
+          } 
+        ] 
+      } 
+    ] 
+  } 
+}
+  4.1.2 窗口显示隐藏
+        在HarmonyOS中，窗口的显示隐藏与应用托盘强绑定，因此在启动应用前，为了保证窗口创建正常，需要先创建托盘。
+  const { app, Tray } = require('electron'); 
+const path = require('path'); 
+app.whenReady().then(() => { 
+    let tray = new Tray(path.join(__dirname, 'tray_icon.png')); 
+    ... 
+})
+        如果应用不需要托盘和隐藏窗口，则需要修改ohos_hap/web_engine/src/main/ets/adapter/AppWindowAdapter.ets，注释掉processMode和startupVisibility属性。
+  ... 
+    const options: StartOptions = { 
+      // processMode: contextConstant.ProcessMode.ATTACH_TO_STATUS_BAR_ITEM, 
+      // startupVisibility: param.show ? contextConstant.StartupVisibility.STARTUP_SHOW : contextConstant.StartupVisibility.STARTUP_HIDE, 
+      windowLeft: param.left - leftBorder, 
+      windowTop: param.top - topBorder, 
+      windowWidth: param.width + leftBorder + leftBorder, 
+      windowHeight: param.height + leftBorder + topBorder 
+    } 
+...
+  4.1.3 调整三键
+        当前窗口三键效果与其他平台保持一致，创建除首窗口外的窗口时，如果窗口为有边框窗口（即frame属性为true），则窗口三键为显示状态，若窗口为无边框窗口，那么窗口不显示三键，子窗口与悬浮窗无三键。
+        如果应用希望在创建无边框窗口时显示三键，可以通过修改ohos_hap/web_engine/src/main/ets/ability/WebAbility.ets中的初始状态调整创建窗口时三键的初始显示状态。如下图：
+  
+  4.2 悬浮窗模块
+        在BrowserWindow内新增windowInfo属性，是一个Object对象，该对象里目前只有一个属性type，type类型为String，取值是mainWindow、subWindow、floatWindow中的一个，默认取值是mainWindow。
+  let w = new BrowserWindow({ 
+    windowInfo: { 
+       // type 的取值是 mainWindow subWindow floatWindow 
+       type: 'floatWindow' 
+    }, 
+    parent: mainWindow; 
+    x:100, 
+    y:100, 
+    width:800, 
+    height: 600, 
+    show: true, 
+    // 可以设置背景色和透明度 
+    // 透明度的生效优先级顺序是 transparent、opacity 和 backgroundColor 里的alpha取值 
+    transparent: true, // 全透明 
+    opacity: 0.5, // 半透明 
+    backgroundColor: '#660000ee' // 半透明蓝色 
+}); 
+w.loadURL("https://www.baidu.com");
+  4.3 systemPreferences模块
+      （1）实现接口---systemPreferences.getMediaAccessStatus(mediaType)
+    mediaType 类型为string，可以是 microphone，camera 或 screen。
+   返回string类型的值，可以是 not-determined， granted， denied， restricted 或 unknown。
+  获取麦克风、摄像头或截屏权限的状态，当前ohos平台仅返回 granted 与 denied 两种状态。
+     （2）实现接口---systemPreferences.askForMediaAccess(mediaType)
+    mediaType 类型为string - 请求的媒体类型，可以是microphone 和 camera。
+   返回 Promise<boolean> - 如果用户允许授权或已授权则resolve true。系统授权弹窗仅会弹出一次，如果已经请求权限或请求被拒绝，必须在”设置 -> 隐私和安全”中手动更改，不会弹出提醒，并且 promise 会返回现有的权限状态。
+      （3）新增请求权限接口---systemPreferences.requestSystemPermission(permission)
+     permission 类型为string - 可以是下列值之一：
+          location，camera，microphone，screen-capture，user-download-dir，user-desktop-dir，user-document-dir，bluetooth，pasteboard
+        返回 Promise<boolean> - 如果用户允许授权或已授权则resolve true。系统授权弹窗仅会弹出一次，如果已经请求权限或请求被拒绝，必须在”设置 -> 隐私和安全”中手动更改，不会弹出提醒，并且 promise 会返回现有的权限状态。
+      （4）新增请求权限接口---systemPreferences.requestDirectoryPermission(path)
+    path 类型为string | null
+         返回 Promise<boolean> - 如果用户允许授权或已授权则resolve true，当 path 为 null 时，会同时请求用户下载、桌面、文档三个目录的权限，三个目录其中一个授权则resolve true。系统授权弹窗仅会弹出一次，如果已经请求权限或请求被拒绝，必须在”设置 -> 隐私和安全”中手动更改，不会弹出提醒。
+      （5）新增打开系统设置中应用程序信息页接口---systemPreferences.openApplicationInfoEntry()
+  打开 “系统设置”并进入应用程序信息页面。
+  五、坚盾守护模式
+        坚盾守护模式是为高安全需求用户设计的系统级安全防护方案。该模式通过实施严格的功能限制，显著增强系统安全性，有效防范针对远程攻击面的各类威胁。在坚盾安全模式下，系统增加了功能限制，需要开发者评估应用在坚盾模式下的可用性。
+  5.1 启用坚盾守护模式
+        要启用坚盾守护模式，请按以下路径操作：
+        （1）进入电脑系统设置
+        （2）选择"隐私和安全"选项
+        （3）点击"坚盾守护模式"并开启
+  5.2 坚盾守护模式下的功能限制
+        为降低应用受攻击风险，坚盾守护模式将实施以下关键安全限制：
+  • 全面禁用即时编译(JIT)功能，包括已获取 ACL 权限的应用程序
+  • 暂停 WebAssembly 支持（当前版本中 WebAssembly 依赖 JIT 功能实现）
+  5.3 应用兼容性评估指南
+        在坚盾守护模式下运行应用程序时，建议进行以下兼容性检查：
+       （1）JavaScript 性能评估：
+  • 测试应用在限制环境中的运行效率。
+  • 优化可能存在的性能瓶颈。
+       （2）WebAssembly 兼容性检查：
+  • 静态代码分析：检查项目中的 WebAssembly 相关API调用，与第三方库的 Wasm 依赖情况。
+  • 运行时验证：在坚盾守护模式下执行全功能测试。
+        参考链接：坚盾守护模式 ，查询设备安全模式 (C/C++) ，JSVM-API 坚盾守护模式 。

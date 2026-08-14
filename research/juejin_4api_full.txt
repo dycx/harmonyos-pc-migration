@@ -1,0 +1,278 @@
+Electron 跑鸿蒙 PC 上，这 4 个 API 的行为跟 Windows 完全不一样——但文档一行都没写
+             
+ 
+    TrisighT
+      
+ 
+                    2026-07-04
+                    
+                    152
+                   
+                    阅读5分钟
+                   
+
+ 
+  
+     .markdown-body{word-break:break-word;line-height:1.75;font-weight:400;font-size:16px;overflow-x:hidden;color:#252933}.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4,.markdown-body h5,.markdown-body h6{line-height:1.5;margin-top:35px;margin-bottom:10px;padding-bottom:5px}.markdown-body h1{font-size:24px;line-height:38px;margin-bottom:5px}.markdown-body h2{font-size:22px;line-height:34px;padding-bottom:12px;border-bottom:1px solid #ececec}.markdown-body h3{font-size:20px;line-height:28px}.markdown-body h4{font-size:18px;line-height:26px}.markdown-body h5{font-size:17px;line-height:24px}.markdown-body h6{font-size:16px;line-height:24px}.markdown-body p{line-height:inherit;margin-top:22px;margin-bottom:22px}.markdown-body img{max-width:100%}.markdown-body hr{border:none;border-top:1px solid #ddd;margin-top:32px;margin-bottom:32px}.markdown-body code{word-break:break-word;border-radius:2px;overflow-x:auto;background-color:#fff5f5;color:#ff502c;font-size:.87em;padding:.065em .4em}.markdown-body code,.markdown-body pre{font-family:Menlo,Monaco,Consolas,Courier New,monospace}.markdown-body pre{overflow:auto;position:relative;line-height:1.75}.markdown-body pre>code{font-size:12px;padding:15px 12px;margin:0;word-break:normal;display:block;overflow-x:auto;color:#333;background:#f8f8f8}.markdown-body a{text-decoration:none;color:#0269c8;border-bottom:1px solid #d1e9ff}.markdown-body a:active,.markdown-body a:hover{color:#275b8c}.markdown-body table{display:inline-block!important;font-size:12px;width:auto;max-width:100%;overflow:auto;border:1px solid #f6f6f6}.markdown-body thead{background:#f6f6f6;color:#000;text-align:left}.markdown-body tr:nth-child(2n){background-color:#fcfcfc}.markdown-body td,.markdown-body th{padding:12px 7px;line-height:24px}.markdown-body td{min-width:120px}.markdown-body blockquote{color:#666;padding:1px 23px;margin:22px 0;border-left:4px solid #cbcbcb;background-color:#f8f8f8}.markdown-body blockquote:after{display:block;content:""}.markdown-body blockquote>p{margin:10px 0}.markdown-body ol,.markdown-body ul{padding-left:28px}.markdown-body ol li,.markdown-body ul li{margin-bottom:0;list-style:inherit}.markdown-body ol li .task-list-item,.markdown-body ul li .task-list-item{list-style:none}.markdown-body ol li .task-list-item ol,.markdown-body ol li .task-list-item ul,.markdown-body ul li .task-list-item ol,.markdown-body ul li .task-list-item ul{margin-top:0}.markdown-body ol ol,.markdown-body ol ul,.markdown-body ul ol,.markdown-body ul ul{margin-top:3px}.markdown-body ol li{padding-left:6px}.markdown-body .contains-task-list{padding-left:0}.markdown-body .task-list-item{list-style:none}@media (max-width:720px){.markdown-body h1{font-size:24px}.markdown-body h2{font-size:20px}.markdown-body h3{font-size:18px}}.markdown-body pre,.markdown-body pre>code.hljs{color:#333;background:#f8f8f8}.hljs-comment,.hljs-quote{color:#998;font-style:italic}.hljs-keyword,.hljs-selector-tag,.hljs-subst{color:#333;font-weight:700}.hljs-literal,.hljs-number,.hljs-tag .hljs-attr,.hljs-template-variable,.hljs-variable{color:teal}.hljs-doctag,.hljs-string{color:#d14}.hljs-section,.hljs-selector-id,.hljs-title{color:#900;font-weight:700}.hljs-subst{font-weight:400}.hljs-class .hljs-title,.hljs-type{color:#458;font-weight:700}.hljs-attribute,.hljs-name,.hljs-tag{color:navy;font-weight:400}.hljs-link,.hljs-regexp{color:#009926}.hljs-bullet,.hljs-symbol{color:#990073}.hljs-built_in,.hljs-builtin-name{color:#0086b3}.hljs-meta{color:#999;font-weight:700}.hljs-deletion{background:#fdd}.hljs-addition{background:#dfd}.hljs-emphasis{font-style:italic}.hljs-strong{font-weight:700}直接给结论：Electron 在鸿蒙 PC 上跑，底层 Chromium 被华为定制过，4 个你天天用的 API 表现跟 Windows 差别大到能让应用直接白屏。文档里一行字都没写。
+
+// 先看问题有多严重——这段代码在 Windows 上完美运行，鸿蒙 PC 上全崩
+import { nativeTheme, shell, powerMonitor } from 'electron'
+
+// 1. 平台判断——你以为会返回 'harmonyos'？
+console.log(process.platform) // 鸿蒙PC上输出: 'linux'
+
+// 2. 暗色模式——你以为能读取系统主题？
+console.log(nativeTheme.themeSource) // 鸿蒙PC上输出: undefined
+
+// 3. 打开外链——你以为会跳浏览器？
+shell.openExternal('https://example.com') // 鸿蒙PC上: 静默返回 undefined，什么也不发生
+
+// 4. 系统休眠监听——你以为跟 Windows 一样？
+powerMonitor.on('suspend', () => console.log('系统睡眠'))
+// 鸿蒙PC上: 用户息屏就触发，不是"睡眠"，后台任务还在跑
+
+我们团队花了两天排查这些问题——你猜怎么着，Electron 官方文档、鸿蒙开发者文档、Chromium 定制说明，没有一个地方提到这些行为差异。
+
+坑 1：process.platform 返回 'linux'，你的平台判断全走错
+
+鸿蒙 PC 的内核基于 Linux，Chromium 的 platform 检测看的是内核而非上层 OS。所以 process.platform 返回 'linux'，不是 'harmonyos'，也不是什么 'freebsd'。
+
+这意味着你项目里所有 if (process.platform === 'win32') 分支在鸿蒙上走了 'linux' 路径——窗口尺寸计算、字体渲染策略、文件路径拼接，全都跟你的预期不一致。
+
+最坑的是文件路径。Windows 用反斜杠，Linux 用正斜杠。你的代码如果写了 path.join(__dirname, 'data\\config.json')，在鸿蒙上跑出来的路径是 /data\config.json——混搭了，文件找不到。
+
+// 正确做法：不要依赖 process.platform 判断鸿蒙，用自定义检测
+import * as fs from 'fs'
+import * as path from 'path'
+
+function getRealPlatform(): 'windows' | 'macos' | 'harmonyos' | 'linux' {
+  if (process.platform === 'linux') {
+    // 鸿蒙PC的特征：platform是linux + 存在鸿蒙专属标识
+    const isHarmonyOS = !!process.env.HARMONYOS_VERSION ||
+      !!process.env.HOS_DEVICE_TYPE ||
+      (() => {
+        try {
+          return fs.readFileSync('/etc/os-release', 'utf8').includes('HarmonyOS')
+        } catch { return false }
+      })()
+    return isHarmonyOS ? 'harmonyos' : 'linux'
+  }
+  if (process.platform === 'win32') return 'windows'
+  if (process.platform === 'darwin') return 'macos'
+  return 'linux'
+}
+
+// 使用示例
+const platform = getRealPlatform()
+const configPath = platform === 'harmonyos' || platform === 'linux'
+  ? path.join(__dirname, 'data', 'config.json')   // 正斜杠
+  : path.join(__dirname, 'data', 'config.json')    // Windows也兼容path.join
+
+说实话，我们一开始也没想到 process.platform 会返回 'linux'——以为华为至少会加个自定义标识。结果没有，你得自己读 /etc/os-release 来判断。
+
+坑 2：nativeTheme 返回 undefined，暗色模式直接废了
+
+Electron 的 nativeTheme API 在 Windows/macOS 上能读取系统暗色模式状态、监听切换事件。鸿蒙 PC 上？nativeTheme.themeSource 返回 undefined，nativeTheme.shouldUseDarkColors 也是 undefined。
+
+原因：鸿蒙的"深色模式"不是传统 OS 语义——它是系统级的资源切换（深色资源包覆盖浅色资源包），Chromium 的 nativeTheme 模块压根没对接鸿蒙的资源机制。
+
+你如果写了 nativeTheme.on('updated', callback)，在鸿蒙上这个事件永远不会触发。页面白屏不算夸张，更常见的是你的 UI 一直卡在浅色状态，用户调了系统暗色模式，你的应用完全没反应。
+
+// 暗色模式兼容层——鸿蒙PC上用系统属性检测替代 nativeTheme
+import { nativeTheme } from 'electron'
+import * as cp from 'child_process'
+
+function getSystemTheme(): 'light' | 'dark' {
+  if (getRealPlatform() === 'harmonyos') {
+    // 鸿蒙PC：读取系统属性 persist.sys.dark_mode
+    try {
+      const result = cp.execSync('getprop persist.sys.dark_mode').toString().trim()
+      return result === '1' ? 'dark' : 'light'
+    } catch { return 'light' } // 默认浅色
+  }
+  // Windows/macOS 正常使用 nativeTheme
+  return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+}
+
+// 监听暗色模式变化——鸿蒙PC上轮询检测（因为没有 nativeTheme 事件）
+function watchThemeChange(callback: (theme: 'light' | 'dark') => void): void {
+  if (getRealPlatform() === 'harmonyos') {
+    let lastTheme = getSystemTheme()
+    setInterval(() => {
+      const current = getSystemTheme()
+      if (current !== lastTheme) {
+        lastTheme = current
+        callback(current)
+      }
+    }, 5000) // 5秒轮询一次，开销几乎为零
+    return
+  }
+  nativeTheme.on('updated', () => {
+    callback(nativeTheme.shouldUseDarkColors ? 'dark' : 'light')
+  })
+}
+
+这方案看着有点蠢——轮询系统属性来检测暗色模式？但鸿蒙就是没有提供 Chromium 层面的主题变更回调，你只能这么干。5 秒轮询一次，CPU 开销约等于零，用户感知延迟也还行。
+
+坑 3：shell.openExternal 不跳浏览器，URL 打开变成静默失败
+
+在 Windows 上，shell.openExternal('https://example.com') 会调用系统默认浏览器打开 URL。鸿蒙 PC 上？返回 undefined，什么也不发生。没有错误抛出，没有 fallback，静默失败。
+
+鸿蒙 PC 的"浏览器"概念跟 Windows 不同——它用的是系统内置的 Web Viewer（不是独立浏览器应用），shell.openExternal 底层的 xdg-open 在鸿蒙定制环境中找不到浏览器入口。
+
+我们团队在雷达鸭的详情页遇到这个问题——用户点击"查看原文"链接，什么反应都没有。排查半天才发现 shell.openExternal 在鸿蒙上是个空操作。
+
+// URL打开兼容层——鸿蒙PC上用系统命令替代 shell.openExternal
+import { shell } from 'electron'
+import * as cp from 'child_process'
+
+function openUrl(url: string): Promise<void> {
+  if (getRealPlatform() === 'harmonyos') {
+    // 鸿蒙PC：用 am 命令启动系统 Web Viewer
+    return new Promise((resolve, reject) => {
+      cp.exec(`am start -a android.intent.action.VIEW -d "${url}"`, (err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    })
+  }
+  // Windows/macOS 正常使用 shell
+  return shell.openExternal(url) as Promise<void>
+}
+
+// 使用示例：带 fallback
+openUrl('https://blog.csdn.net/TrisighT0').catch(() => {
+  // fallback：通知渲染进程在应用内 WebView 中打开
+  mainWindow.webContents.send('open-url-internal', url)
+})
+
+我承认这个兼容方案不够优雅——用 am start 命令调系统 Web Viewer 有点像在写 Android 代码。但鸿蒙 PC 确实继承了一部分 Android 的意图机制，这条路反而是最稳的。
+
+坑 4：powerMonitor 的 suspend 是息屏不是睡眠
+
+Windows 上 powerMonitor.on('suspend') 在系统进入睡眠（S3）时触发，on('resume') 在唤醒时触发。鸿蒙 PC 上，用户按电源键息屏（屏幕关闭但 CPU 不停），suspend 就触发了。resume？亮屏就触发。
+
+区别在哪？Windows 睡眠时 CPU 暂停、网络断开、定时器冻结。鸿蒙息屏时 CPU 还在跑、网络还连着、定时器还走着。如果你在 suspend 事件里做了"停止定时上报"、"断开 WebSocket"之类的操作，用户只是息了一下屏幕，你的应用就把连接全断了——这种体验，说实话比白屏还恐怖。
+
+// 电源状态兼容层——区分"息屏"和"真正睡眠"
+import { powerMonitor } from 'electron'
+
+function onSystemSleep(callback: () => void, thresholdMs = 30000): void {
+  if (getRealPlatform() === 'harmonyos') {
+    // 鸿蒙PC：suspend只是息屏，不算真正睡眠
+    // 判断真正睡眠：息屏 + 恢复间隔超过阈值
+    let suspendTime = 0
+    powerMonitor.on('suspend', () => {
+      suspendTime = Date.now()
+    })
+    powerMonitor.on('resume', () => {
+      const duration = Date.now() - suspendTime
+      // 息屏不到30秒就亮屏 → 只是短暂息屏，不算睡眠
+      if (duration > thresholdMs) {
+        callback() // 这才是真正的"长时间息屏/睡眠"
+      }
+    })
+    return
+  }
+  // Windows/macOS 正常逻辑
+  powerMonitor.on('suspend', callback)
+}
+
+// 使用示例
+onSystemSleep(() => {
+  // 只在真正长时间睡眠时才断开连接
+  webSocket.disconnect()
+  reportTimer.stop()
+})
+
+这个 30 秒阈值是我们团队拍脑袋定的——如果你有更精确的判断标准，欢迎告诉我。但至少这个方案避免了"用户息屏 3 秒就断网"这种灾难级体验。
+
+统一兼容方案：一个文件搞定四个差异
+
+把上面四个兼容函数抽到一个文件里，应用启动时加载一次就够：
+
+// harmonyos-compat.ts —— Electron 鸿蒙PC兼容层（完整版）
+import { nativeTheme, shell, powerMonitor } from 'electron'
+import * as fs from 'fs'
+import * as cp from 'child_process'
+
+// 核心平台检测
+export function getRealPlatform(): 'windows' | 'macos' | 'harmonyos' | 'linux' {
+  if (process.platform === 'linux') {
+    try {
+      const osRelease = fs.readFileSync('/etc/os-release', 'utf8')
+      if (osRelease.includes('HarmonyOS')) return 'harmonyos'
+    } catch { /* not HarmonyOS */ }
+    if (process.env.HARMONYOS_VERSION) return 'harmonyos'
+    return 'linux'
+  }
+  if (process.platform === 'win32') return 'windows'
+  if (process.platform === 'darwin') return 'macos'
+  return 'linux'
+}
+
+// 暗色模式检测
+export function getSystemTheme(): 'light' | 'dark' {
+  if (getRealPlatform() === 'harmonyos') {
+    try {
+      const result = cp.execSync('getprop persist.sys.dark_mode').toString().trim()
+      return result === '1' ? 'dark' : 'light'
+    } catch { return 'light' }
+  }
+  return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+}
+
+// 暗色模式变化监听
+export function watchThemeChange(callback: (theme: 'light' | 'dark') => void): void {
+  if (getRealPlatform() === 'harmonyos') {
+    let lastTheme = getSystemTheme()
+    setInterval(() => {
+      const current = getSystemTheme()
+      if (current !== lastTheme) {
+        lastTheme = current
+        callback(current)
+      }
+    }, 5000)
+    return
+  }
+  nativeTheme.on('updated', () => {
+    callback(nativeTheme.shouldUseDarkColors ? 'dark' : 'light')
+  })
+}
+
+// URL打开
+export function openUrl(url: string): Promise<void> {
+  if (getRealPlatform() === 'harmonyos') {
+    return new Promise((resolve, reject) => {
+      cp.exec(`am start -a android.intent.action.VIEW -d "${url}"`, (err) => {
+        err ? reject(err) : resolve()
+      })
+    })
+  }
+  return shell.openExternal(url) as Promise<void>
+}
+
+// 系统睡眠监听
+export function onSystemSleep(callback: () => void, thresholdMs = 30000): void {
+  if (getRealPlatform() === 'harmonyos') {
+    let suspendTime = 0
+    powerMonitor.on('suspend', () => { suspendTime = Date.now() })
+    powerMonitor.on('resume', () => {
+      if (Date.now() - suspendTime > thresholdMs) callback()
+    })
+    return
+  }
+  powerMonitor.on('suspend', callback)
+}
+
+引入这一层后，你主代码里不需要写任何 if (platform === 'harmonyos') 的判断——直接调用 getSystemTheme()、openUrl()、onSystemSleep()，兼容层帮你处理差异。这习惯是被鸿蒙逼出来的，写完之后回头看，Windows/macOS 的路径也变得更干净了。
+
+反正这四个坑踩完之后，我们团队定了一条规矩：凡是涉及系统行为的 API，一律走兼容层，不直接调用 Electron 原生接口。听着有点过度工程，但你要知道鸿蒙 PC 的 Chromium 定制层还有多少我们没发现的差异——保守一点总没错。
+
+你遇到过类似的平台差异吗？评论区聊聊。
+
+关于作者：老三，10+ 年软件开发老兵，软件设计师 + 人工智能应用工程师，专注鸿蒙 ArkTS 北向开发和 Web 前端，偶尔折腾 AI 自动化。不定期在 CSDN 分享鸿蒙和 AI 方向的踩坑笔记。
+
+本文遵循 MIT 协议，转载请注明出处。
+
+标签：Electron、鸿蒙PC、API兼容、桌面开发、Chromium定制

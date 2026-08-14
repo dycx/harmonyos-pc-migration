@@ -1,0 +1,1016 @@
+
+============================================================
+## 话题: 知识地图 (0204203363319759021)
+============================================================
+
+--- post 0304203363319759094 author=47685c10af4c45c1b9cc2ddb37e1ec10 date=None first=1 ---
+如果您在其他平台未使用过 Electron 框架，不建议您直接使用该框架。您可以从自身软件跨平台演进整体规划上对跨平台框架进行选择。
+ 
+  Electron 是一个使用 JavaScript、HTML 和 CSS 构建桌面应用程序的框架。通过将 Chromium 和 Node.js 嵌入到它的二进制文件中，Electron 允许您维护一个 JavaScript 代码库，并创建可以在 Windows、macOS、Linux 和 HarmonyOS 上运行的跨平台应用程序。
+   目录
+           序号    开发阶段    章节    核心内容   
+       1    评估    API 文档    查阅可用 API   
+       2    准备    开发环境配置    接入Electron框架，运行Hello World   
+       3    开发    HAP构建与使用    应用基础配置、签名打包与安装   
+       4    开发    关键能力适配    Electron/Web/Node.js等跨平台通用能力API、
+    鸿蒙新增API及其他鸿蒙特性   
+       5    开发    跨语言扩展    三方库和ArkTS调用   
+       6    调试    调试与问题定位    调试和问题定位   
+     核心资源
+    Electron鸿蒙化仓库
+  HarmonyOS Electron源码仓库
+  HarmonyOS Electron Release构建包仓库
+  历史问题集
+      第一章 API 文档
+  1.1 API 文档入口
+  完整的 OHOS API 文档位于gitcode仓库docs/api/目录。
+  1.2 快速索引
+           资源    说明    路径   
+       全量 API 索引    共 1294 个 API    ./docs/api/index.md   
+       按模块浏览    66 个模块    ./docs/api/README.md   
+        第二章 开发环境配置
+               要求   
+       开发系统    Windows/MacOS   
+       开发工具    DevEco Studio   
+       运行系统    HarmonyOS   
+     在正式开始Electron应用鸿蒙化开发之前，可以先完成Hello World运行。对比其他平台npm install electron方式接入Electron框架，鸿蒙上需以libelectron.so、libadapter.so与ArkTS源码为核心接入Electron框架：
+           接入方式    参考资源   
+       直接获取electron-release构建包    搭建Electron HarmonyOS开发环境指导   
+       自行编译Electron源码    如何编译Electron源码
+    或编译源码构建应用   
+        第三章 HAP 包开发与部署
+  3.1 项目迁移基础方案
+           接入方式    参考资源    优点    缺点   
+       以DevEco Studio为核心（方案一）    已有Electron项目，如何适配HarmonyOS PC    - 项目结构更直观
+    - 一键打包运行
+    - 可调试ArkTS代码    - 需手动迁移业务代码
+    - 升级需替换的内容更多   
+       以VS Code/WebStorm等js开发工具为核心（方案二）    @electron-ohos/electron-builder使用说明
+    或electron鸿蒙项目升级文档    - 升级相对方便
+    - 一般无需关注ohos_hap    - 不支持自动签名
+    - 手动hdc install安装应用
+    - 支持配置项有限，部分配置项仍需
+    直接修改ohos_hap   
+     3.2 应用基础信息配置
+    定制自己的鸿蒙版应用
+   3.3 签名与权限
+    权限配置与签名申请
+   3.4 沙箱路径
+    应用沙箱路径与用户数据
+   3.5 安装与运行
+    运行已签名的hap包
+  Electron是否能在模拟器上运行
+   3.6 上架注意事项
+    HarmonyOS electron如何分发至PAD
+      第四章 关键能力适配
+  4.1 通用能力开发
+  窗口相关
+    electron窗口在HarmonyOS和windows上的区别
+  Harmony Electron如何实现窗口记忆持久化
+  HarmonyOS的悬浮窗是否支持拖拽改变大小
+  HarmonyOS electron如何设置窗口样式
+  HarmonyOS electron如何自定义标题栏（含三键）
+   文件相关
+    Electron应用上如何读写文件？
+  Electron上如何实现用户选择文件并复制到目标目录？
+  Harmony electron如何将文件拖拽到应用
+  Harmony Electron如何进行读取、保存及持久化文件
+   媒体能力
+    HarmonyOS electron如何进行截屏
+  HarmonyOS electron实现摄像头录制
+  HarmonyOS electron实现录屏
+  HarmonyOS electron实现录音
+   子进程相关
+    子进程相关的API使用方法
+  hnp打包与fork指导文档
+  HarmonyOS Electro应用执行命令行
+   其他
+    命令行参数支持说明
+  基于Electron开发跳转至其他应用 / 使用Deep Linking实现应用间跳转
+  Electron如何实现自定义托盘示例
+  Electron如何使用剪贴板
+  Electron自定义主题
+  Electron加载自定义字体
+  HarmonyOS Electron关于JIT功能的使用
+   4.2 鸿蒙扩展能力开发
+  新增API
+    Electron鸿蒙新增接口（不完整，完整API参考第一章 API文档各模块）
+   安全访问控制
+    Electron如何申请权限
+  坚盾守护模式
+   创新特性
+    Electron集成华为账号登录
+      第五章 跨语言扩展
+  5.1 环境配置
+    如何配置HarmonyOS Electron编译环境
+   5.2 三方库
+  综述
+    Electron使用三方库
+   编译方案
+           分类    集成方式    方案   
+       纯C/C++    node插件    Electron调用C/C++指导   
+       Node.js C/C++扩展    node插件    鸿蒙平台Electron加载Addon指导文档   
+       V8原生扩展    node插件    编译基于V8接口开发的三方库的addon   
+       Rust    node插件    Electron使用Rust三方库   
+       不限    二进制可执行程序（hnp）    Electron使用二进制可执行文件hnp   
+     其他典型三方库
+    Electron如何使用koffi三方库
+   5.3 ArkTS调用
+  方案
+    callArkTSFunction接口
+  Electron调用ETS指导文档 / Electron调用ArkTS指导
+   实例
+    Electron实现获取设备唯一标识符
+  Electron无UI快捷截屏（依赖系统UI）
+  Electron实现应用间跳转
+      第六章 调试与问题定位
+  6.1 应用调试
+    渲染进程调试
+  主进程调试
+   6.2 日志说明
+    Electron 框架日志说明
+   6.3 典型问题
+    Electron启动白屏如何定位
+  Electron使用so/node发生崩溃，栈顶在ld-musl-aarch64.so
+  Electron无法监听手指触摸滑动事件
+         本文档持续更新，欢迎提出宝贵建议。
+
+--- post 0301217939148403937 author=be823d5a3f6d4d31aab63916e45e23e9 date=None first=0 ---
+我在调试打包预编译产物的时候总是卡在签名这里，请赐教：
+  调试真机：基于openHarmony的开鸿OS X86桌面版
+  devEco:5.0.4
+  用的自动签名方式签的：
+  build-profile.json5主要配置内容和报错信息：
+
+--- post 0302207397077453027 author=1d3ebd974d724416aea924ca114358b1 date=None first=0 ---
+学习了
+
+--- post 0301207335430955625 author=91358ec45ad843f3a41547ef4484f3fe date=None first=0 ---
+学习了
+
+============================================================
+## 话题: 已有Electron项目如何适配HarmonyOS PC (0202206298304106575)
+============================================================
+
+--- post 0302206298304106466 author=393eaf0f10544b699d3a54316f6f2bc7 date=None first=1 ---
+开发者使用JavaScript/TypeScript在其他平台上开发Electron工程。当前计划适配HarmonyOS PC，如何进行迁移适配？
+
+--- post 0304217960196141068 author=be823d5a3f6d4d31aab63916e45e23e9 date=None first=0 ---
+顺便提一嘴，我创建一个Hello world的ability项目可以自动签名调试通过 在开鸿os里运行，都是openHarmony平台只是项目类型不一样，证书也会不一样吗
+
+--- post 0303217957959313663 author=be823d5a3f6d4d31aab63916e45e23e9 date=None first=0 ---
+能否详细讲一讲基于Harmony electron预编译产物调试的签名步骤那里哇，我卡在这个步骤好几天了，完全没有思路，老板给我一台X86的淘汰笔记本，让我装了一个基于openHarmony的深开鸿OS-X86桌面版系统，让我做纯血鸿蒙适配。。。
+  我的困惑是，1.老板是不是这个概念首先就不对，纯血鸿蒙一般都是基于arm指令集的设备，就算我跑通了x86的调试，依然不可能直接打包上架为纯血鸿蒙的hap应用
+  2.这个在项目结构里勾选自动签名后，在调试的最后一步里报错说是
+   The target device does not work with apps with an OpenHarmony signature. Sign the app with a HarmonyOS signature before installing it on the device.
+ 
+  可是目标设备就是openHarmony啊，还是说我的配置文件哪里不对劲，
+  
+  请大佬给于指导，非常感谢！！！
+
+--- post 0301217593398775215 author=3ee6a184356f455fa0db5375483fa504 date=None first=0 ---
+你好，有详细的适配教程吗，这个里面很多点已经讲到了，可以很多细节没有讲，还是捉摸不透啊
+
+--- post 0302206298304118467 author=393eaf0f10544b699d3a54316f6f2bc7 date=None first=0 ---
+【背景知识】
+      Electron是基于Chromium+Node.js的桌面应用框架。采用主进程+渲染进程多进程模型，主进程运行Node.js负责应用生命周期，渲染进程运行Chromium内核呈现HTML5界面。通过集成V8引擎，使Web前端技术栈与底层系统功能结合，开发者可用JavaScript构建跨平台桌面应用。
+  
+    其他平台Electron开发流程：
+  
+   
+  【解决方案】
+ 1. Electron版本选择：  当前已提供两个HarmonyOS化版本：Electron25和Electron34，可以使用华为账号登录仓库下载最新版本的Release包，这两个版本对应的Chromium内核和node.js版本情况如下：
+               Electron25    Electron34    Electron37   
+       Chromium    Chromium114        Chromium132
+        Chromium138   
+       Node.js    18.18.2    20.18.1    22.16.0   
+     在选择Electron版本时，需要考虑以下几点：
+    Electron版本及Node.js版本是否满足应用使用三方库需求。
+  对于前端库，需检查其依赖的浏览器API是否被选择的Electron版本对应Chromium版本支持。
+   如果是由其他平台迁移至HarmonyOS，以尽快完成HarmonyOS化为目的的话，可以考虑使用与其他平台版本更接近的Electron版本，否则出于版本迭代考虑，更推荐使用更新版本Electron。
+ 2. 整体迁移思路如下：  
+    分析依赖，对不满足的依赖进行适配和替换。
+  业务代码适配HarmonyOS，对差异点如权限判断，平台判断，沙箱路径等进行修改。
+  TypeScript开发可选：编译TypeScript为JavaScript。
+  将编译产物及package.json复制到HarmonyOS化Electron样例工程中，并删除package.json的devDependencies字段。
+  在HarmonyOS的Electron工程中安装依赖，并启动工程，查看依赖是否正常。若不正常，则回退到第1步进行依赖适配。
+    最佳实践：
+ 
+  
+   1.原始Electron工程和HarmonyOS Electron工程互不包含，分别使用VSCode/WebStorm和DevEco Studio打开两个工程。 2.Electron工程编译并使用electron-builder打包，其中package.json中build字段设置asar: false，拷贝asar拆包后的app文件产物到HarmonyOS Electron工程目录。
+ 
+  
+   3.替换node_modules中C/C++ Native模块为使用HarmonyOS编译工具链编译的产物，并将相关.node/.so放置在ohos_hap\electron\libs\arm64-v8a目录下，并修改引入路径。
+ 
+ 3. 编译常见问题：调用与接口声明不一致。 问题描述：      问题1：TS开发的Electron项目，调用SystemPreferences请求权限接口报错。
+     报错：error TS2339: Property 'requestSystemPermission' does not exist on type 'SystemPreferences'.`。
+  
+  
+    问题2：TS开发的Electron项目，使用const currentPlatform: NodeJS.Platform = 'win32'判断currentPlatform === 'ohos'平台时发生报错。
+     报错error TS2367: This comparison appears to be unintentional because the types 'win32' and 'ohos' have no overlap.
+  
+  
+  问题1&2根因分析：  
+  HarmonyOS的Electron相比开源版本，在Electron层新增了暴露的接口，如权限相关接口。Windows环境的接口声明（electron.d.ts）没有HarmonyOS的权限接口，因此TS编译阶段报错。
+ 修改方案：    问题1： 使用HarmonyOS化的Electron源码中src/electron/electron.d.ts替换掉业务代码里的node_modules/electron/electron.d.ts。
+   
+    问题2： Node.js原始接口声明中没有ohos，HarmonyOS版本的Node.js为了和开源版本保持一致，暂不在Platform中新增ohos。
+   
+  因此建议开发者使用process.platform进行判断。
+ 其他同类错误也可使用问题1和2的解法一并解决：            序号    错误码    中文描述   
+           1    TS2345    参数赋值时类型不匹配所以赋值失败。   
+       2    TS2554    实参和形参个数不匹配   
+       3    TS2346    参数类型X不能赋值给参数类型Y，通常出现于函数重载场景   
+       4    TS2339    调用了不存在的属性   
+       5    TS2684    泛型约束不匹配   
+       6    TS2769    没有对应的重载方法。   
+       7    TS2564    属性没有初始化器，也未在构造函数中明确赋值。   
+       8    TS2367    变量比较时类型不匹配   
+    
+  【总结】 Electron项目适配HarmonyOS PC，主要工作是使用HarmonyOS适配版Electron重新打包构建应用，并替换掉不兼容Node插件模块集成的功能。 如果使用TS开发Electron项目，迁移过程中TS转JS失败是常见易错点之一。若出现以上错误码，从接口声明方向排查。
+  【常见FAQ】 Q：HarmonyOS开发需要使用.node，在Electron工程中引入后，yarn build报错error TS2307: Cannot find module xxx。 A：yarn build:tsc本身并不自动检查.node文件，请检查是否手动配置了相关校验。
+  Q：Electron工程中引入.node，指明了const addon = require('/data/storage/el1/bundle/libs/arm64/libaddon.node')，使用webpack编译后移植到HarmonyOS工程中运行，HarmonyOS工程对应位置已引入了该node，但运行时仍报错Cannot find module '/data/storage/el1/bundle/libs/arm64/libaddon.node'。 A：配置webpack的externals，让webpack不对这个addon模块进行解析和打包，保留require语句的原样，在运行时再去加载。在webpack.config.js的externals字段中添加'libaddon.node': 'commonjs /data/storage/el1/bundle/libs/arm64/libaddon.node'后可以直接const addon = require('libaddon.node')。
+  Q：在Electron开发中，如何判断当前的平台是HarmonyOS？ A：可以通过node.js的process.platform进行判断，HarmonyOS平台输出的字段是openharmony。
+
+============================================================
+## 话题: Electron鸿蒙化 (0204181390529189966)
+============================================================
+
+--- post 0304181390529189952 author=1cdaef0872cc498eace2ce706cb4ae84 date=None first=1 ---
+纯血鸿蒙的PC版，到底能不能支持electron应用,有没有适配方案
+
+--- post 0303190586064097926 author=9320dac60df24c5ea44f1bd81b1314f7 date=None first=0 ---
+请耐心等待
+
+--- post 0302188153491081065 author=7cd8528948c04614ab5a789fd41d3f74 date=None first=0 ---
+同求。
+
+--- post 0304187268392482820 author=None date=None first=0 ---
+等支持了踢我一下，谢谢啦
+
+--- post 0302184850119238031 author=1f8b22eeb20048568b1a9322235b3e24 date=None first=0 ---
+什么时候发布，我们公司的产品需要上架鸿蒙，采用的就是electron技术栈
+
+--- post 0302184439818409639 author=39c80f691b0c4a5790abd5d5d9747e60 date=None first=0 ---
+期待，希望早点公开
+
+--- post 0303183834898882829 author=c9fb25f93b80422e9be2924da5584bb9 date=None first=0 ---
+Electron适配的源码什么时候能发布呢？
+
+--- post 0301183661934680906 author=3b8f350849454483a82c417823e24333 date=None first=0 ---
+ohos目前已经支持electron项目了？，pc应用如何适配？QQ项目的oh版本是基于arkts重新开发的吗？
+
+--- post 0301182792326364410 author=9320dac60df24c5ea44f1bd81b1314f7 date=None first=0 ---
+【背景知识】
+ Electron是一个跨平台的桌面应用程序框架。
+  【解决方案】
+  HarmonyOS已经支持Electron，部分应用已先行启动适配。目前该过程还在beta阶段，尚未公开发布，敬请期待。
+  【常见FAQ】
+  Q：是否支持electron-builder打包？
+  A：目前不支持electron-builder打包，可以使用DevEco Studio打包。
+
+--- post 0301182526067313062 author=7820ffe655bd44d8b5c5c04c9b1624d3 date=None first=0 ---
+同问
+
+--- post 0301182191080977661 author=9320dac60df24c5ea44f1bd81b1314f7 date=None first=0 ---
+问题正在处理中，请耐心等待
+
+--- post 0302182173945885419 author=44d1b6965eb046ef873e5d4ba8ff2d97 date=None first=0 ---
+同问
+
+--- post 0308182171751361825 author=4d50dc628e05479e9846fdfcac909c8d date=None first=0 ---
+同问。
+
+============================================================
+## 话题: 如何执行cmd命令 (0201194087407908582)
+============================================================
+
+--- post 0301194087407908251 author=393eaf0f10544b699d3a54316f6f2bc7 date=None first=1 ---
+使用electron开发HarmonyOS PC应用，如何执行cmd命令？请以wmic为例说明。
+
+--- post 0301194087407933252 author=393eaf0f10544b699d3a54316f6f2bc7 date=None first=0 ---
+【背景知识】 exec：Node.js的子进程模块中的一个方法，用于执行shell命令并获取其输出，具体使用参考exec的使用。
+ 【解决方案】
+1. 使用命令行获取os名称和版本。 a、windows上使用wmic获取os名称版本和os所在磁盘编号：
+   C:\Users\用户名>wmic os get Name。 Name。 Microsoft Windows 11 专业版|C:\windows|\Device\Harddisk0\Partition3。
+ 
+ b、ubuntu 22.04上获取os名称和系统所在硬盘编号：
+   ******@wuhphis40368:~$ lsb_release -d Description: Ubuntu 22.04 LTS $ df -l / Filesystem 1K-blocks Used Available Use% Mounted on /dev/vda2 61663000 19477544 39243808 34% /
+ 
+ c、HarmonyOS上获取os名称和版本：
+   $uname -a HarmonyOS localhost HongMeng Kernel 1.9.5 #1 SMP Fri May 23 11:02:06 UTC 2025 aarch64 $df / Filesystem 1K-blocks Used Available Use% Mounted on tmfs 16313040 68 16312972 1% /data/storage/el2
+ 
+2. 通过exec方法在HarmonyOS PC上调用命令行，样例如下。 a、 index.html运行在渲染进程中，点击"获取系统和版本"按钮触发。
+ <body>
+<h2>获取系统和版本演示</h2>
+<button id="getName">获取系统和版本</button>
+<script>
+    const { ipcRenderer } = require('electron');
+    const getName = document.getElementById('getName');
+
+    getName.addEventListener('click', () => {
+      // 发送获取系统和版本请求到主进程
+      ipcRenderer.send('get-name');
+    });
+    // 监听返回结果
+    ipcRenderer.on('getName-result', (event, message) => {
+      window.alert('message = ' + message);
+    });
+</script>
+</body>
+
+ b、主进程通过ipcMain监听事件，执行uname -a并给渲染进程返回结果。
+ function getName(event) {
+    try {
+        const cmd = `uname -a`
+        exec(cmd, (err, result) => {
+            if (err) {
+                console.error('获取失败:', err);
+                event.reply('getName-result', `error: 命令错误`);
+                return;
+            }
+            event.reply('getName-result', result);
+        })
+    } catch (e) {
+        event.reply('getName-result', `error: ${e.message}`);
+    }
+}
+
+ipcMain.on('get-name', (event) => {
+    getName(event)
+})
+
+ 效果如下：
+ 
+ c、exec执行命令的返回值。 exec的回调函数有3个入参：error、stdout、stderr。
+   error：错误对象。这是最重要的返回值。
+    如果命令成功执行（即使命令本身有错误输出），error为null。
+  命令执行失败时error非空，error包含以下关键属性： error.code：退出码。如果进程被信号终止，则该属性为null。 error.signal：终止信号。如果子进程被信号终止（如SIGTERM，SIGKILL），这里会表示是哪个信号。如果正常退出，则为null。 error.cmd：被执行的命令字符串。
+    stdout：标准输出流的内容，例如执行ls命令后显示的文件列表就在这里。
+  stderr：标准错误流的内容。 以上边的uname -a命令举例，在执行的命令正确的时候，输出的返回值效果如下：
+  
+ 在执行错误的命令的时候，输出的返回值如下：
+ 
+          需求    windows命令    Linux命令    HarmonyOS命令   
+           获取操作系统名称和版本。    wmic os get Name    lsb_release -d    uname -a   
+   3. 全量可执行的命令清单可执行以下命令，然后查看桌面上的help.txt文件内容。   cd ~/Desktop && help -a > help.txt。
+
+============================================================
+## 话题: Electron框架HarmonyOS开发指导 (0204189796759316140)
+============================================================
+
+--- post 0304189796759316753 author=d7b0efcdd3b54ce7a6b9d85fff832f29 date=None first=1 ---
+一、引言
+  1.1 欢迎使用HarmonyOS Electron
+        欢迎您关注并使用HarmonyOS Electron！Electron框架是一个使用Web技术（HTML/CSS/JavaScript）构建跨平台桌面应用的框架。它结合了Chromium和Node.js，允许开发者用前端技术开发原生应用。现在HarmonyOS Electron基于HarmonyOS平台进行了适配，Electron开发者现在可以在HarmonyOS上更高效、更稳定地构建应用。
+  1.2 本篇文档目的
+        本文档旨在向开发者清晰地传达以下关键信息：
+        1. Electron在HarmonyOS上的官方支持状态。
+        2. 提供快速上手和深入使用HarmonyOS Electron的开发指导。
+        3. 我们强烈建议您在开始使用Electron进行开发前，仔细阅读本文档。
+  二、支持声明
+  2.1 支持确认
+        HarmonyOS Electron框架已获得HarmonyOS生态合作伙伴的支持，当前HarmonyOS Electron框架已开源，欢迎访问Electron 主仓 进行使用。
+  2.2开箱即用
+        开发者现在可以在HarmonyOS 5.0上放心地集成和使用HarmonyOS Electron进行项目开发。该框架已深度适配平台环境，并在HarmonyOS 5.0环境中经过严格测试与验证，确保核心功能的稳定运行和兼容性。
+  2.3 持续维护和演进
+        HarmonyOS Electron已于2025年6月开源至OH社区，我们将持续投入资源对HarmonyOS Electron进行维护、升级和优化，及时修复问题，并根据平台发展和开发者反馈引入新特性，确保其长期的生命力和竞争力。
+  三、HarmonyOS Electron开发指导
+  3.1 环境配置
+        操作系统：Ubuntu 22.04 磁盘空间：大于300G 内存：大于32G CPU架构：x86_64
+  3.2 编译源码构建应用
+  3.2.1 安装编译工具
+  （1）代码仓库网址
+        当前HarmonyOS Electron源码的开源代码地址为：https://gitcode.com/openharmony-sig/electron 。
+  
+  （2）为确保仓库中的大文件能拉取到本地，需安装工具git-lfs，ccache（注：该步骤仅在首次拉取代码时需要执行）
+  # 安装 git-lfs 拉取大文件。ccache 编译器缓存。
+$ sudo apt install git-lfs ccache
+  
+  （3）配置工具repo（注：该步骤仅在首次拉取代码时需要执行，执行该步骤前请确保已经配置好了python3环境）
+  # 下载码云repo工具(可以参考码云帮助中心：https://gitee.com/help/articles/4316)
+$ mkdir -p ~/bin
+$ curl https://gitee.com/oschina/repo/raw/fork_flow/repo-py3 > ~/bin/repo
+$ chmod a+x ~/bin/repo
+$ echo 'export PATH=~/bin/:$PATH' >> ~/.bashrc
+$ source ~/.bashrc
+$ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple requests
+  3.2.2 安装Node.js环境
+        Electron源码编译必须依赖Node.js才可执行，当前Node.js建议版本为20.18.1，低于该版本可能导致源码编译时出错。有三种可选的方式安装环境：
+  （1）通过Ubuntu标准软件库安装
+        此方式安装的node需要单独安装npm：
+  sudo apt update
+sudo apt install -y nodejs npm
+        查看版本号：
+  node -v
+  （2）通过NodeSource仓库安装
+        通过该方式安装的nodejs同时包含了node和npm，npm无需单独安装：
+  curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
+        查看版本号：
+  node -v
+npm -v
+  （3）通过nvm安装
+        安装nvm：
+  git clone https://gitee.com/mirrors/nvm
+cd nvm
+bash install.sh
+source ~/.bashrc
+        查看nvm版本号：
+  nvm -v
+        安装nodejs（版本20.18.1，32位或64位，下面以32位为例），使用并查看版本号：
+  nvm install node 20.18.1 32
+nvm use 20.18.1
+node -v
+  3.2.3 从代码仓拉取Electron代码
+      （1）从代码仓克隆chromium-electron仓库
+  # 使用https拉取chromium-electron代码
+$ git clone -b master https://gitcode.com/openharmony-sig/electron.git
+
+# 执行命令`git lfs pull`，确保仓库中的大文件已经下载完成
+$ git lfs pull
+
+# 拉取chromium-electron对应的ohos chromium代码
+$ cd [path_to_chromium_electron] # 切换目录到chromium-electron根目录
+$ repo init -u https://gitcode.com/openharmony-tpc/manifest.git -b pc_chromium_132 -m pc_chromium_132_20251106.xml --no-repo-verify
+$ repo sync -c # 可以执行多次，以确保代码全部拉取成功
+$ repo forall -c 'git lfs pull' # 可执行多次，以确保大文件全部拉取成功
+
+# 应用chromium-electron的patch到ohos chromium
+$ cd [path_to_chromium_electron] # 切换目录到chromium-electron根目录
+$ pushd src
+$ find -name "*.git*" -exec rm -rf "{}" \;
+$ popd
+$ chmod +x override_files.sh
+$ ./override_files.sh
+      （2）运行 Electron目录/src/build/install-build-deps.sh脚本，安装编译所需的软件包（注：该步骤仅在首次拉取代码时需要执行）
+  $ sudo ./src/build/install-build-deps.sh --no-chromeos-fonts
+  
+  3.2.4 运行脚本electron_build.sh
+  $ ./electron_build.sh
+        Q：执行./electron_build.sh进行编译的时候为什么会出现如（cannot access 'rust-toolchain.tar.gz' : No such file or directory）类似的报错？
+        A：因为在执行./override_files.sh时，网络不稳定导致拉取rust-toolchain.tar.gz未成功。可以在执行repo forall -c 'git lfs pull后，从src/out/musl_64目录下，将rust-toolchain.tar.gz文件进行备份，随后，在执行./override_files.sh完成后，将备份的文件拷贝到原来的位置即可正常编译。
+  3.2.5 输出结果
+        编译完成后，会在src/out/musl_64目录下输出的编译产物文件如下：
+  • locales
+  • libelectron.so
+  • electron
+  • resources.pak
+  • chrome_100_percent.pak
+  • chrome_200_percent.pak
+  • icudtl.dat
+  • libadapter.so
+  • libffmpeg.so
+  • v8_context_snapshot.bin
+        可以通过如下脚本拷贝所需资源：
+  #!/bin/sh
+source_path=./Electron实际目录/src/out/musl_64
+destination_path=./electron
+if [ -d ${destination_path} ];then
+rm -rf ${destination_path}
+fi
+mkdir ${destination_path}
+cp ${source_path}/libelectron.so ${destination_path}
+cp ${source_path}/libffmpeg.so ${destination_path}
+cp ${source_path}/libadapter.so ${destination_path}
+cp ${source_path}/electron ${destination_path}
+cp ${source_path}/icudtl.dat ${destination_path}
+cp ${source_path}/v8_context_snapshot.bin ${destination_path}
+cp ${source_path}/chrome_100_percent.pak ${destination_path}
+cp ${source_path}/chrome_200_percent.pak ${destination_path}
+cp ${source_path}/resources.pak ${destination_path}
+mkdir ${destination_path}/locales
+cp ${source_path}/locales/zh-CN.pak ${destination_path}/locales
+cp ${source_path}/locales/en-US.pak ${destination_path}/locales
+        使用方法：将脚本保存为copy.sh放置于编译文件夹chromium文件夹同级，并执行，执行脚本后会将所需资源拷贝到同级的electron中（注：请参考修改为自己的source_path）。
+  3.3 HAP包构建与使用
+  3.3.1 编译未签名的HAP包
+  （1）准备Electron工程
+        Electron工程在源码目录src/ohos/app/文件夹内。将其下载下来，并在工程中创建electron/libs/arm64-v8a文件夹。
+  （2）拷贝源码编译产物至Electron工程中
+         使用编译产物中的libelectron.so、libffmpeg.so、libadapter.so替换electron/libs/arm64-v8a目录。将其它产物替换web_engine/src/main/resources/resfile目录下的资源。
+        注意：除源码编译产物外，另需libc++_shared.so位于HarmonyOS系统的sdk中，需将其一同拷贝到Electron工程的electron/libs/arm64-v8a目录下，libc++_shared.so路径为：electron源码根目录/src/ohos_sdk/openharmony/native/llvm/lib/aarch64-linux-ohos下。
+  （3）准备Electron工程的开始文件
+        如图所示，将Electron工程代码（若需要编译则需将编译产物）放置到web_engine/src/main/resources/resfile/resources/app目录下，图中所需要的resfile/resources/app目录下测试文件可在chromium-electron仓resources 目录 下找到。
+  
+  （4）编译并生成未签名的HAP包
+        so库与resfile都放入指定位置后，点击 Build -> Build Hap(s)/APP(s) -> Build Hap(s) 按钮编译生成未签名的HAP包或点击右上角运行按钮启动应用。
+  
+  
+        编译完成后，未签名的HAP包会被保存到ohos_hap/electron/build/default/outputs/default/下，文件名electron-default-unsigned.hap。
+  
+  3.3.2 签名与权限
+      （1）可以选择自动签名或手动签名方式，点击此处跳转配置调试签名 官方说明文档。
+      （2）权限配置文件位置：ohos_hap\web_engine\src\main\module.json5文件中requestPermissions字段，以下是当前声明的权限及说明，若需要了解更多权限，请点击跳转查看应用权限列表 官方说明文档。
+               权限名
+            权限说明
+            必要性
+       
+           ohos.permission.SYSTEM_FLOAT_WINDOW
+            允许应用使用全局悬浮窗的能力。
+            按需申请
+       
+           ohos.permission.INTERNET
+            允许使用Internet网络。
+            基础权限
+       
+           ohos.permission.GET_NETWORK_INFO
+            允许应用获取数据网络信息。
+            基础权限
+       
+           ohos.permission.ACCESS_CERT_MANAGER
+            允许应用进行查询证书及私有凭据等操作。
+            按需申请
+       
+           ohos.permission.RUNNING_LOCK
+            允许应用获取运行锁，保证应用在后台的持续运行
+            基础权限
+       
+           ohos.permission.PRINT
+            允许应用获取打印框架的能力。
+            按需申请
+       
+           ohos.permission.PREPARE_APP_TERMINATE
+            允许应用关闭前执行自定义的预关闭动作。
+            基础权限
+       
+           ohos.permission.ACCESS_BIOMETRIC
+            允许应用使用生物特征识别能力进行身份认证。
+            按需申请
+       
+           ohos.permission.FILE_ACCESS_PERSIST
+            允许应用支持持久化访问文件Uri。
+            基础权限
+       
+           ohos.permission.PRIVACY_WINDOW
+            允许应用将窗口设置为隐私窗口，禁止截屏录屏。
+            按需申请
+       
+           ohos.permission.WINDOW_TOPMOST
+            允许窗口置顶。
+            按需申请
+       
+           ohos.permission.READ_PASTEBOARD
+            允许应用读取剪贴板。
+            基础权限
+       
+           ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY
+            允许应用访问公共目录下Download目录及子目录，建议与ohos.permission.FILE_ACCESS_PERSIST同时申请。
+            按需申请
+       
+           ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY
+            允许应用访问公共目录下Documents目录及子目录，建议与ohos.permission.FILE_ACCESS_PERSIST同时申请。
+            按需申请
+       
+           ohos.permission.READ_WRITE_DESKTOP_DIRECTORY
+            允许应用访问公共目录下Desktop目录及子目录，建议与ohos.permission.FILE_ACCESS_PERSIST同时申请。
+            按需申请
+       
+           ohos.permission.LOCATION
+            允许应用获取设备位置信息。
+            按需申请
+       
+           ohos.permission.APPROXIMATELY_LOCATION
+            允许应用获取设备模糊位置信息。
+            按需申请
+       
+           ohos.permission.LOCATION_IN_BACKGROUND
+            允许应用在后台运行时获取设备位置信息。
+            按需申请
+       
+           ohos.permission.MICROPHONE
+            允许应用使用麦克风。
+            按需申请
+       
+           ohos.permission.CAMERA
+            允许应用使用相机。
+            按需申请
+       
+           ohos.permission.ACCESS_BLUETOOTH
+            允许应用接入蓝牙并使用蓝牙能力，例如配对、连接外围设备等。
+            按需申请
+       
+           ohos.permission.CUSTOM_SCREEN_CAPTURE
+            允许应用截取屏幕内容。
+            按需申请
+       
+     
+        点击查看申请应用权限 官方流程，权限申请邮件内容示例如下，请根据实际需要的授权申请权限。示例内容仅供参考：
+  
+        Electron中需要ACL签名的权限包括（如果未申请到证书导致签名未通过，可以暂时将这几个权限注释掉）：
+  "requestPermissions": [
+{
+  "name": "ohos.permission.SYSTEM_FLOAT_WINDOW"
+},
+...
+{
+  "name": "ohos.permission.READ_PASTEBOARD",
+  "reason": "$string:access_pasteboard",
+},
+...
+{
+"name": "ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY",
+"reason": "$string:reason_download",
+  "usedScene": {
+  "abilities": [
+  "FormAbility"
+  ],
+  "when":"always"
+  }
+},
+{
+"name": "ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY",
+"reason": "$string:reason_documents",
+  "usedScene": {
+  "abilities": [
+  "FormAbility"
+  ],
+  "when":"always"
+  }
+},
+{
+"name": "ohos.permission.READ_WRITE_DESKTOP_DIRECTORY",
+"reason": "$string:reason_desktop",
+  "usedScene": {
+  "abilities": [
+  "FormAbility"
+  ],
+  "when":"always"
+  }
+}
+]
+  3.3.3 运行已签名的HAP包
+        申请证书后在DevEco Studio中配置签名信息：
+  
+        配置完成后点击右上角的run按钮即可运行：
+  
+        或者配置完成后也可以在命令行中使用hdc命令行工具，执行命令安装HAP包。点击跳转hdc 工具官方指导。
+  hdc app install <已签名HAP包路径>
+# e.g: hdc app install electron-default-signed.hap
+  
+  3.3.4 HarmonyOS沙箱路径
+     应用沙箱路径和真实物理路径的对应关系
+        在应用沙箱路径下读写文件，经过映射转换，实际读写的是真实物理路径中的应用文件，应用沙箱路径与真实物理路径对应关系如下表所示，点击跳转查看应用沙箱目录 的官方说明文档。
+        其中<USERID>当前固定为100。
+               应用沙箱路径
+            物理路径
+            说明
+       
+           /data/storage/el1/bundle
+            /data/app/el1/bundle/public/<PACKAGENAME>
+            应用安装包目录
+       
+           /data/storage/el1/base
+            /data/app/el1/<USERID>/base/<PACKAGENAME>
+            应用el1级别加密数据目录
+       
+           /data/storage/el2/base
+            /data/app/el2/<USERID>/base/<PACKAGENAME>
+            应用el2级别加密数据目录
+       
+           /data/storage/el1/database
+            /data/app/el1/<USERID>/database/<PACKAGENAME>
+            应用el1级别加密数据库目录
+       
+           /data/storage/el2/database
+            /data/app/el2/<USERID>/database/<PACKAGENAME>
+            应用el2级别加密数据库目
+       
+           如图所示，用户数据需要存储在/data/storage/el2/base路径下，Electron默认的--user-data-dir为/data/storage/el2/base/files。
+  
+        查看用户数据需要通过系统文件管理器，如下图：
+  
+  
+  3.4 定制自己的HarmonyOS Electron应用
+   3.4.1 替换应用名
+        位置：ohos_hap\electron\src\main\resources\zh_CN\element\string.json，替换文件中的EntryAbility_label字段的值即可。
+  
+  3.4.2 替换图标
+        位置：ohos_hap\AppScope\resources\base\media
+  
+  3.4.3 资源替换
+        由于暂时没有编译环境，如果原有项目需要编译，例如实际上TS需要编译转换为JS再进行加载，则需要将编译产物JS文件放到项目web_engine/src/main/resources/resfile/resources/app中。
+        开源三方库可能遇到的问题：
+      （1）如果 npm库里面使用了addon（也就是用C++来写库给JS调用），未适配HarmonyOS平台无法正常使用。-- 参考sqlite3编译的适配方案进行适配
+       （2）如果 npm库里面使用了process.platform、os.type()等查平台的API来判断平台，未适配HarmonyOS平台无法正常使用。因为process.platform返回的是ohos，三方库不一定认识它。 -- 需要修改代码，适配OH平台
+       （3）如果 npm库里面有二进制文件（例如esbuild这样的库），无法正常使用。-- linux机器需要root权限，新PC走hnp方案
+  3.4.4 多实例配置
+        如果应用不需要使用多实例，请将如下图所示的"multiAppMode"配置去掉：
+  
+  四、HarmonyOS Electron特性说明
+  4.1 窗口模块
+  4.1.1 首窗口指定大小
+        如果应用需要指定首窗口启动时的窗口尺寸，需要修改工程内文件electron/src/main/module.json5，向abilities内增加metadata属性，如下，如果不需要居中则只需要指定width和height。
+  { 
+  "module": { 
+    "name": "pc_entry", 
+    "type": "entry", 
+    "srcEntry": "./ets/Application/AbilityStage.ets", 
+    "description": "$string:module_desc", 
+    "mainElement": "EntryAbility", 
+    "deviceTypes": [ 
+      "2in1" 
+    ], 
+    "deliveryWithInstall": true, 
+    "installationFree": false, 
+    "pages": "$profile:main_pages", 
+    "abilities": [ 
+      { 
+        "name": "EntryAbility", 
+        "srcEntry": "./ets/entryability/EntryAbility.ets", 
+        "description": "$string:EntryAbility_desc", 
+        "icon": "$media:app_icon", 
+        "label": "$string:EntryAbility_label", 
+        "startWindowIcon": "$media:app_icon", 
+        "startWindowBackground": "$color:start_window_background", 
+        "launchType": "specified", 
+        "removeMissionAfterTerminate": true, 
+        "exported": true, 
+        ***************** 添加到这里 ***************** 
+        "metadata": [ 
+            { 
+                "name": "ohos.ability.window.height", 
+                "value": "800" 
+            }, 
+            { 
+                "name": "ohos.ability.window.width", 
+                "value": "800", 
+            }, 
+            { 
+                "name": "ohos.ability.window.left", 
+                "value": "center" 
+            }, 
+            { 
+                "name": "ohos.ability.window.top", 
+                "value": "center", 
+            } 
+        ], 
+        ********************************************* 
+        "skills": [ 
+          { 
+            "entities": [ 
+              "entity.system.home", 
+              "entity.system.browsable" 
+            ], 
+            "actions": [ 
+              "action.system.home", 
+              "ohos.want.action.viewData" 
+            ], 
+            "uris": [] 
+          } 
+        ] 
+      } 
+    ] 
+  } 
+}
+
+  4.1.2 窗口显示隐藏
+        在HarmonyOS中，窗口的显示隐藏与应用托盘强绑定，因此在启动应用前，为了保证窗口创建正常，需要先创建托盘。
+  const { app, Tray } = require('electron'); 
+const path = require('path'); 
+app.whenReady().then(() => { 
+    let tray = new Tray(path.join(__dirname, 'tray_icon.png')); 
+    ... 
+})
+
+        如果应用不需要托盘和隐藏窗口，则需要修改ohos_hap/web_engine/src/main/ets/adapter/AppWindowAdapter.ets，注释掉processMode和startupVisibility属性。
+  ... 
+    const options: StartOptions = { 
+      // processMode: contextConstant.ProcessMode.ATTACH_TO_STATUS_BAR_ITEM, 
+      // startupVisibility: param.show ? contextConstant.StartupVisibility.STARTUP_SHOW : contextConstant.StartupVisibility.STARTUP_HIDE, 
+      windowLeft: param.left - leftBorder, 
+      windowTop: param.top - topBorder, 
+      windowWidth: param.width + leftBorder + leftBorder, 
+      windowHeight: param.height + leftBorder + topBorder 
+    } 
+...
+
+  4.1.3 调整三键
+        当前窗口三键效果与其他平台保持一致，创建除首窗口外的窗口时，如果窗口为有边框窗口（即frame属性为true），则窗口三键为显示状态，若窗口为无边框窗口，那么窗口不显示三键，子窗口与悬浮窗无三键。
+        如果应用希望在创建无边框窗口时显示三键，可以通过修改ohos_hap/web_engine/src/main/ets/ability/WebAbility.ets中的初始状态调整创建窗口时三键的初始显示状态。如下图：
+  
+  4.2 悬浮窗模块
+        在BrowserWindow内新增windowInfo属性，是一个Object对象，该对象里目前只有一个属性type，type类型为String，取值是mainWindow、subWindow、floatWindow中的一个，默认取值是mainWindow。
+  let w = new BrowserWindow({ 
+    windowInfo: { 
+       // type 的取值是 mainWindow subWindow floatWindow 
+       type: 'floatWindow' 
+    }, 
+    parent: mainWindow; 
+    x:100, 
+    y:100, 
+    width:800, 
+    height: 600, 
+    show: true, 
+    // 可以设置背景色和透明度 
+    // 透明度的生效优先级顺序是 transparent、opacity 和 backgroundColor 里的alpha取值 
+    transparent: true, // 全透明 
+    opacity: 0.5, // 半透明 
+    backgroundColor: '#660000ee' // 半透明蓝色 
+}); 
+w.loadURL("https://www.baidu.com");
+
+  4.3 systemPreferences模块
+      （1）实现接口---systemPreferences.getMediaAccessStatus(mediaType)
+    mediaType 类型为string，可以是 microphone，camera 或 screen。
+   返回string类型的值，可以是 not-determined， granted， denied， restricted 或 unknown。
+  获取麦克风、摄像头或截屏权限的状态，当前ohos平台仅返回 granted 与 denied 两种状态。
+     （2）实现接口---systemPreferences.askForMediaAccess(mediaType)
+    mediaType 类型为string - 请求的媒体类型，可以是microphone 和 camera。
+   返回 Promise<boolean> - 如果用户允许授权或已授权则resolve true。系统授权弹窗仅会弹出一次，如果已经请求权限或请求被拒绝，必须在”设置 -> 隐私和安全”中手动更改，不会弹出提醒，并且 promise 会返回现有的权限状态。
+      （3）新增请求权限接口---systemPreferences.requestSystemPermission(permission)
+     permission 类型为string - 可以是下列值之一：
+          location，camera，microphone，screen-capture，user-download-dir，user-desktop-dir，user-document-dir，bluetooth，pasteboard
+        返回 Promise<boolean> - 如果用户允许授权或已授权则resolve true。系统授权弹窗仅会弹出一次，如果已经请求权限或请求被拒绝，必须在”设置 -> 隐私和安全”中手动更改，不会弹出提醒，并且 promise 会返回现有的权限状态。
+      （4）新增请求权限接口---systemPreferences.requestDirectoryPermission(path)
+    path 类型为string | null
+         返回 Promise<boolean> - 如果用户允许授权或已授权则resolve true，当 path 为 null 时，会同时请求用户下载、桌面、文档三个目录的权限，三个目录其中一个授权则resolve true。系统授权弹窗仅会弹出一次，如果已经请求权限或请求被拒绝，必须在”设置 -> 隐私和安全”中手动更改，不会弹出提醒。
+      （5）新增打开系统设置中应用程序信息页接口---systemPreferences.openApplicationInfoEntry()
+  打开 “系统设置”并进入应用程序信息页面。
+  五、坚盾守护模式
+        坚盾守护模式是为高安全需求用户设计的系统级安全防护方案。该模式通过实施严格的功能限制，显著增强系统安全性，有效防范针对远程攻击面的各类威胁。在坚盾安全模式下，系统增加了功能限制，需要开发者评估应用在坚盾模式下的可用性。
+  5.1 启用坚盾守护模式
+        要启用坚盾守护模式，请按以下路径操作：
+        （1）进入电脑系统设置
+        （2）选择"隐私和安全"选项
+        （3）点击"坚盾守护模式"并开启
+  5.2 坚盾守护模式下的功能限制
+        为降低应用受攻击风险，坚盾守护模式将实施以下关键安全限制：
+  • 全面禁用即时编译(JIT)功能，包括已获取 ACL 权限的应用程序
+  • 暂停 WebAssembly 支持（当前版本中 WebAssembly 依赖 JIT 功能实现）
+  5.3 应用兼容性评估指南
+        在坚盾守护模式下运行应用程序时，建议进行以下兼容性检查：
+       （1）JavaScript 性能评估：
+  • 测试应用在限制环境中的运行效率。
+  • 优化可能存在的性能瓶颈。
+       （2）WebAssembly 兼容性检查：
+  • 静态代码分析：检查项目中的 WebAssembly 相关API调用，与第三方库的 Wasm 依赖情况。
+  • 运行时验证：在坚盾守护模式下执行全功能测试。
+        参考链接：坚盾守护模式 ，查询设备安全模式 (C/C++) ，JSVM-API 坚盾守护模式 。
+
+--- post 0301217847921821768 author=be823d5a3f6d4d31aab63916e45e23e9 date=None first=0 ---
+请教一下我在华为云仓库里下载了electron34的预编译产物包，在devEco里打包完成之后总是卡在签名这里，我的调试PC设备是基于openharmony的开鸿OS x86桌面版，提示：error: verify code signature failed. The target device does not work with apps with an OpenHarmony signature. Sign the app with a HarmonyOS signature before installing it on the device.
+  可是我目标设备就是OpenHarmony啊，我之前用deveco做的Hello world程序是能够完整在开鸿os里运行的，我对比了两者的主要区别就是build-profile里面的
+  "runtimeOS": "OpenHarmony",
+  和api的版本信息区别较大，是不是这个electron预编译包只能在纯血鸿蒙的设备环境里调试运行，我注释掉那些permisions权限也需要手工重新申请完整的harmony证书吗，真的很困惑，请指导一下，谢谢！
+
+--- post 0302217533475974375 author=3ee6a184356f455fa0db5375483fa504 date=None first=0 ---
+应该是跟手机app是一个原理，根据版本号识别是否有更新
+
+--- post 0303217533404036833 author=3ee6a184356f455fa0db5375483fa504 date=None first=0 ---
+需要通过预加载脚本contextBridge.exposeIsMainWorld对渲染进程暴露接口实现
+
+--- post 0301217533330286117 author=3ee6a184356f455fa0db5375483fa504 date=None first=0 ---
+肯定要启用的，生产环境必须启用
+
+--- post 0301216553728727821 author=9edfc52291a341ca9769d3b4931424d2 date=None first=0 ---
+可以支持使用鸿蒙PC编译吗，我的其他电脑没有300G那么大的空间了。
+
+--- post 0301215084340635476 author=24ef8a97f12c4bac9104459718680608 date=None first=0 ---
+自动更新怎么做
+
+--- post 0301214848570137246 author=24ef8a97f12c4bac9104459718680608 date=None first=0 ---
+参考路径进去没有对应文件目录。
+
+--- post 0307214337705685314 author=None date=None first=0 ---
+您好，将electron适配成鸿蒙应用后，发布到应用市场上。现在应用更新的话走的是华为市场的更新，请问在electron中有什么办法可以拿到应用是否更新的信息，然后引导用户跳转到华为市场进行更新吗？
+
+--- post 0303213643237900135 author=d7b0efcdd3b54ce7a6b9d85fff832f29 date=None first=0 ---
+开发者你好，当前没有39版本
+
+--- post 0308211482330591086 author=7dc61b0e31864bdf9e39c8e195967b4b date=None first=0 ---
+是否有编译好的v39.8.5版本
+
+--- post 0301209948596938070 author=91358ec45ad843f3a41547ef4484f3fe date=None first=0 ---
+【helloworld】使用二进制编译产物直接开发electron，无需编译源码
+  https://developer.huawei.com/consumer/cn/forum/topic/0201192388832195490?fid=0109140870620153026
+  Electron鸿蒙化开发问题集 
+  https://developer.huawei.com/consumer/cn/forum/topic/0204203363319759021?fid=0109140870620153026
+
+--- post 0304206210017053190 author=d7b0efcdd3b54ce7a6b9d85fff832f29 date=None first=0 ---
+可参考文章3.3.1(3)指导的放置js路径
+
+--- post 0304205674416666043 author=e09fe6e742e548a796283cc41b81ca44 date=None first=0 ---
+现有的 electron 应用，如何打包出鸿蒙 os 下的 app 呢？
+
+--- post 0301205177743878109 author=d7b0efcdd3b54ce7a6b9d85fff832f29 date=None first=0 ---
+如果启用了上下文隔离，可以通过 preload 将 Electron API 暴露给渲染进程。 如果没有启用，可以直接在渲染进程中使用 Electron 的 API
+
+--- post 0302205063931114081 author=2d5ceb4289434a3492fb42db89e2444b date=None first=0 ---
+看手册是把electron从node_modules里单拿出来了，存量的客户端业务迁移，渲染进程里面如何调用electron对象有样例么
+
+--- post 0304203354261219027 author=d7b0efcdd3b54ce7a6b9d85fff832f29 date=None first=0 ---
+开发者你好，可参考：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home?ref=electron34-release&filePath=v34.6.2-20251224.3-release.zip&isFile=true
+
+--- post 0302202559166981493 author=e7f87286fa4a4f52bf7464d3b052b5a4 date=None first=0 ---
+有没有编译好的electron鸿蒙框架，能够直接运行的？
+
+--- post 0302200052765025507 author=d7b0efcdd3b54ce7a6b9d85fff832f29 date=None first=0 ---
+您好，electron本身没有截图接口，如果想实现，尝试调用系统原生截图能力进行截图。调用原生参考：https://gitcode.com/openharmony-sig/electron/tree/master/src/electron/docs/ohos
+
+--- post 0301199984836669093 author=90ca9b21865c4114bfcac1e311e4335b date=None first=0 ---
+有文字如截图
+
+--- post 0302197055122538811 author=34c5c4da3023438a936744df41c217da date=None first=0 ---
+大佬 能补充一下electron 截图能力如何实现呢；
+
+--- post 0303191016416353466 author=c178aff2c7394470a7bb6d367db98eda date=None first=0 ---
+牛啊
+
+============================================================
+## 话题: 如何移植一个nodejs web app (0208219932397903413)
+============================================================
+
+--- post 0308219932397903414 author=7a6504ae76134ff4a0b5a74b5aef5a74 date=None first=1 ---
+我是electerm（windows/Linux(Loongarch)/MacOS）（https://github.com/electerm/electerm）的作者，最近刚移植了electerm到Android，就是运行nodejs web服务，在webview里打开界面, harmony 可以实现吗，有计划支持吗
+
+--- post 0303220293445034517 author=7178da36286c405aba0e245de18c62d8 date=None first=0 ---
+要先区分目标是 HarmonyOS PC 还是手机/平板 HAP。PC 侧如果走 Electron 适配路线，整体思路接近把现有 Electron 工程搬到鸿蒙 Electron 壳里，再处理 native module、路径、窗口和系统能力差异。
+    如果目标是普通 HarmonyOS 应用内用 ArkWeb 承载界面，就不建议默认假设可以像桌面一样长期运行一个本地 Node Web 服务。HAP 里后台进程、端口监听、文件系统、native 模块、PTY/SSH 等都有生命周期和沙箱限制。
+    对 electerm 这类项目，更可控的迁移路线是：前端 UI 尽量复用为 H5/ArkWeb 或 ArkUI；核心能力如 ssh、sftp、pty、终端渲染、密钥管理拆成 ArkTS/NAPI/Native 能力；WebView 只负责界面展示。这样比“启动 Node 服务再打开本地页面”更符合移动端和鸿蒙应用模型。
+
+--- post 0301220025407257426 author=b227b29d387548119f16a05c63d0dfeb date=None first=0 ---
+尊敬的开发者，您好，
+关于您的反馈的问题，
+现有Electron项目适配HarmonyOS是完全可行的。
+适配核心思路是：将原始Electron项目的编译产物同步到鸿蒙Electron工程壳中，替换不兼容的Native模块，最终通过DevEco Studio构建为HAP包
+该问题可以参考的文档如下：已有Electron项目，如何适配HarmonyOS PC：https://developer.huawei.com/consumer/cn/forum/topic/0202206298304106575?fid=0109140870620153026
+Electron使用三方库：https://developer.huawei.com/consumer/cn/forum/topic/0202207503700743878
+
+合作愉快。
+华为开发者联盟
+
+============================================================
+## 话题: react项目通过electron适配鸿蒙PC (0207208651943134252)
+============================================================
+
+--- post 0307208651943134273 author=5c92fb6b3124457882520ae53bc44b1c date=None first=1 ---
+1. 如何把现有的react项目集成electron适配鸿蒙PC
+  2. 适配的流程是什么
+  3. 有什注意点
+
+--- post 0308208694059827293 author=93d1f25772644779ad246306fa824794 date=None first=0 ---
+这个可以分成2个.
+    electron 适配鸿蒙.
+  react 项目运行在electron
+   关于第一个问题:
+    下载编译好的支持鸿蒙的electron 34, 下载地址 （需要注册华为云账号）
+  启动demo 工程     解压后 用deveco 打开 ohos_hap 目录
+   启动鸿蒙项目
+   集成 electron 项目(目录 web_engine/src/main/resources/resfile/resources/app, 将ellctron 项目(问题2集成好的项目)放到这个目录就可以跑起来了.)
+
+============================================================
+## 话题: 如何配置编译环境 (0201208607403321011)
+============================================================
+
+--- post 0301208607403321082 author=393eaf0f10544b699d3a54316f6f2bc7 date=None first=1 ---
+在HarmonyOS上使用Electron开发，有大量场景需要编译，例如Electron调用C/C++、Electron调用ArkTS等，如何配置编译环境？
+
+--- post 0301208607403321083 author=393eaf0f10544b699d3a54316f6f2bc7 date=None first=0 ---
+【背景知识】
+  当前仅支持Linux_x86环境交叉编译，推荐使用Ubuntu22.04。
+  【解决方案】
+      通过git clone <仓库URL> --branch <分支名>拉取HarmonyOS化Electron源码，分支与Electron版本对应关系如下（前缀和后缀可能更改，请在仓库中复制具体分支名，勿在此复制）：
+                        Electron25     Electron34     Electron37    
+               对应分支     xxx/114.0.5735.248-xxx     xxx/132.0.6834.161-xxx     xxx/138.0.7204.45-xxx    
+       
+  
+   克隆过程中需输入Username和Password（如果反复提示输入Username和Password，则是Username或Password错误），通过右上角SSH密钥/HTTPS密码查看并设置(如果Username为空值，需要实名认证)。
+   
+   
+   注意源码中包含LFS大文件，拉取后执行git lfs pull检查大文件是否完整拉取，若无反应，则拉取完成。
+   因仓库较大，拉取耗时较长，输入Username和Password后拉取可能耗时5~10分钟，非卡死。
+  并且建议拉取时指定分支，否则checkout分支多次耗时。
+  
+    拉取源码完成得到chromium-electron-release，进入chromium-electron-release/src/ohos_sdk目录，执行.install文件。执行完成后会新增toolchains、openharmony、native等文件夹。
+   
+   仅编译node需要工具链的情况下，按以上操作获取即可，无需编译Electron源码。libelectron.so可以从electron-release构建包中获取，相应地注意修改编译配置CMakeLists.txt或binding.gyp中链接的libelectron.so的路径。
+  
+    配置环境变量为HarmonyOS编译工具链。可以写成set_env.sh文件在每次编译前执行，也可以写在环境变量中。
+   export CC="${Electron源码路径}/src/ohos_sdk/openharmony/native/llvm/bin/clang --target=aarch64-linux-ohos"
+export CXX="${Electron源码路径}/src/ohos_sdk/openharmony/native/llvm/bin/clang++ --target=aarch64-linux-ohos"
+export LD="${Electron源码路径}/src/ohos_sdk/openharmony/native/llvm/bin/lld --target=aarch64-linux-ohos"
+export STRIP="${Electron源码路径}/src/ohos_sdk/openharmony/native/llvm/bin/llvm-strip"
+export RANLIB="${Electron源码路径}/src/ohos_sdk/openharmony/native/llvm/bin/llvm-ranlib"
+export OBJDUMP="${Electron源码路径}/src/ohos_sdk/openharmony/native/llvm/bin/llvm-objdump"
+export OBJCOPY="${Electron源码路径}/src/ohos_sdk/openharmony/native/llvm/bin/llvm-objcopy"
+export NM="${Electron源码路径}/src/ohos_sdk/openharmony/native/llvm/bin/llvm-nm"
+export AR="${Electron源码路径}/src/ohos_sdk/openharmony/native/llvm/bin/llvm-ar"
+export CFLAGS="-fPIC -D__MUSL__=1"
+export CXXFLAGS="-fPIC -D__MUSL__=1"
+  
+   【常见FAQ】
+  Q：是否可以直接使用开发者联盟官网的Command Line Tools中的编译工具链？
+  A：不可以，Electron的编译工具链与HarmonyOS SDK中的编译工具链存在差异。
+  Q：执行.install报以下错误。
+  gzip: stdin: not in gzip format
+tar: Child returned status 1
+tar: Error is not recoverable: exiting now
+
+  A：使用file <文件名>确认文件格式是否为gzip compressed data，如果不是，则LFS文件未拉取完整，执行git lfs pull拉取。
+
+--- post 0308209407548368363 author=393eaf0f10544b699d3a54316f6f2bc7 date=None first=0 ---
+你好，当前版本暂不支持某某功能，具体等后续官方通知吧
+
+--- post 0308209244852894073 author=None date=None first=0 ---
+当前仅支持Linux环境交叉编译，后续有支持mac或windows的计划嘛

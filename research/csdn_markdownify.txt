@@ -1,0 +1,673 @@
+本文记录一次把桌面端 Electron 项目 electron-markdownify-master 迁移成 OpenHarmony Electron 项目的完整过程。迁移目标不是重写 Markdown 编辑器，而是在尽量不改业务编辑逻辑的前提下，让原来的 Electron 应用可以继续在 macOS 上用 npm start 跑起来，同时也可以被打进鸿蒙 HAP，在鸿蒙模拟器上正常启动和显示。
+ 
+此项目开源地址：https://atomgit.com/OpenHarmonyPCDeveloper/ohos_markdownify
+ 
+ 
+ 欢迎加入鸿蒙PC开发者社区，共同打造开发者工具生态：[鸿蒙PC开发者社区]：https://harmonypc.csdn.net/
+ 欢迎在PC社区平台申请新建项目：https://atomgit.com/OpenHarmonyPCDeveloper
+ 环境搭建文章：https://blog.csdn.net/lbcyllqj/article/details/161286249?sharetype=blogdetail&sharerId=161286249&sharerefer=PC&sharesource=lbcyllqj&spm=1011.2480.3001.8118
+ 
+
+ 
+这次迁移的重点有三个：
+ 
+让老 Electron 项目适配当前电脑上的 Electron 运行环境。
+把普通 Electron 项目放进 OpenHarmony Electron HAP 工程结构里。
+解决鸿蒙模拟器上窗口能打开但内容区域白屏的问题。
+ 
+
+ 
+一、项目迁移前的状态
+ 
+原项目是一个典型的早期 Electron Markdown 编辑器，主入口是根目录下的 main.js，页面入口是 index.html，编辑器和预览逻辑主要在 app/scripts/ 目录中。它没有 npm run dev 脚本，普通桌面端启动方式是：
+ 
+cd /Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master
+npm start
+
+ 
+package.json 中现在保留了桌面端启动命令：
+ 
+{
+  "scripts": {
+    "start": "electron main.js"
+  }
+}
+
+ 
+刚开始在新版本 Electron 环境里跑时，页面虽然能打开，但按钮点击没有反应，控制台能看到类似错误：
+ 
+Cannot read properties of undefined (reading 'app')
+Cannot read properties of undefined (reading 'setOption')
+Cannot read properties of undefined (reading 'operation')
+
+ 
+这类问题的根因通常不是 Markdown 编辑器业务本身坏了，而是旧项目依赖的 Electron API 在新版本里发生了变化。例如旧项目直接使用 remote.app、remote.dialog、主进程 Menu、托盘、桌面快捷键等能力，而这些能力在新版 Electron 或 OpenHarmony Electron 运行时里并不总是可用。
+ 
+所以这次迁移采用的原则是：业务层尽量不动，只补运行时适配层。也就是说，Markdown 文本编辑、预览、格式化按钮、同步滚动、主题切换这些原本属于业务交互的逻辑不重写，只在它们调用 Electron 能力的位置做兼容保护。
+ 
+二、迁移后的目录结构
+ 
+迁移完成后，项目仍然保留普通 Electron 项目根目录，同时新增一个完整的鸿蒙 HAP 工程目录 ohos_hap/。
+ 
+核心结构如下：
+ 
+electron-markdownify-master/
+├── app/                         # Markdownify 前端业务资源
+├── index.html                   # Electron 渲染进程入口
+├── main.js                      # Electron 主进程入口
+├── runtime.js                   # 新增：运行时识别和安全调用工具
+├── config.js                    # 配置读写兼容层
+├── tray.js                      # 托盘兼容处理
+├── scripts/
+│   ├── build-ohos-package.js    # 同步普通 Electron 应用到 HAP 资源目录
+│   └── build-ohos-hap.js        # 调用 Hvigor 构建 HAP
+├── ohos_hap/                    # OpenHarmony Electron HAP 工程
+│   ├── AppScope/
+│   ├── electron/                # entry 模块
+│   └── web_engine/              # Electron runtime HAR 模块
+└── OHOS_ADAPTATION.md           # 项目内适配说明
+
+ 
+鸿蒙运行时真正加载的 Electron 应用资源位于：
+ 
+ohos_hap/web_engine/src/main/resources/resfile/resources/app
+
+ 
+这个目录里会被同步进以下内容：
+ 
+resources/app/
+├── main.js
+├── runtime.js
+├── tray.js
+├── config.js
+├── index.html
+├── app/
+└── node_modules/
+
+ 
+
+ 
+三、第一步：让普通 Electron 项目先在当前电脑跑起来
+ 
+迁移鸿蒙前，先要确认普通 Electron 版本能在当前电脑环境中跑通。否则很容易把桌面 Electron 兼容问题和鸿蒙运行时问题混在一起。
+ 
+桌面端启动命令：
+ 
+cd /Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master
+npm start
+
+ 
+如果需要输出 Electron 运行日志，可以这样启动：
+ 
+ELECTRON_ENABLE_LOGGING=1 npm start
+
+ 
+注意这个项目没有 dev 脚本，所以执行 npm run dev 会得到：
+ 
+Missing script: "dev"
+
+ 
+这不是项目坏了，只是脚本名不同。正确启动方式就是 npm start。
+ 
+四、第二步：建立运行时适配层
+ 
+为了让同一套代码同时跑在桌面 Electron 和 OpenHarmony Electron 上，新增了一个 runtime.js，用于统一判断当前运行环境，并封装安全调用。
+ 
+核心思路如下：
+ 
+const isOhos = process.platform === 'ohos' ||
+  process.platform === 'openharmony' ||
+  envLooksLikeOhos ||
+  pathLooksLikeOhos;
+
+ 
+实际适配中，不能只依赖 process.platform。因为鸿蒙 Electron 运行时里可能返回的是 openharmony，也可能在某些场景下表现得像 Linux 或其它平台。因此还需要结合安装路径判断，例如：
+ 
+/data/storage/el1/bundle/electron/resources/resfile
+/resources/resfile/resources/app
+/bundle/electron/resources/resfile
+
+ 
+最终 runtime.js 会导出：
+ 
+module.exports = {
+  isOhos,
+  platform: process.platform,
+  diagnostics,
+  capabilities,
+  safeCall,
+  safeRequire,
+  warn
+};
+
+ 
+这里的 capabilities 用来描述当前环境是否支持桌面端能力：
+ 
+const capabilities = {
+  applicationMenu: !isOhos,
+  localShortcut: !isOhos,
+  tray: !isOhos,
+  shellOpenExternal: !isOhos,
+  contextMenu: !isOhos
+};
+
+ 
+这样主进程和渲染进程都不需要到处写一堆平台判断，只要读取 runtime.capabilities 就能知道某个功能是否应该启用。
+ 
+
+ 
+五、第三步：适配 Electron 主进程
+ 
+主进程的主要改造点在 main.js。
+ 
+1. 初始化 @electron/remote
+ 
+旧项目大量依赖 remote。新版 Electron 不再推荐直接使用内置 remote，所以项目改成使用 @electron/remote：
+ 
+const remoteMain = runtime.safeRequire('@electron/remote/main', null);
+if (remoteMain && typeof remoteMain.initialize === 'function') {
+  runtime.safeCall('remoteMain.initialize', () => remoteMain.initialize());
+}
+
+ 
+创建窗口后再启用当前窗口的 remote 能力：
+ 
+if (remoteMain && typeof remoteMain.enable === 'function') {
+  runtime.safeCall('remoteMain.enable', () => remoteMain.enable(mainWindow.webContents));
+}
+
+ 
+这一步解决的是桌面 Electron 中 remote.app、remote.dialog 不存在导致的兼容问题。
+ 
+2. 对鸿蒙关闭桌面端能力
+ 
+鸿蒙运行时没有传统桌面系统菜单栏、托盘、桌面级本地快捷键等能力，所以这些功能不能硬调用。适配后的主进程会根据能力判断启用：
+ 
+if (runtime.capabilities.tray) {
+  tray.create(mainWindow);
+}
+
+ 
+关闭窗口时也要区分桌面端和鸿蒙端：
+ 
+mainWindow.on('close', event => {
+  if (isQuitting || runtime.isOhos) {
+    return;
+  }
+
+  event.preventDefault();
+  if (process.platform === 'darwin') {
+    app.hide();
+  } else {
+    mainWindow.hide();
+  }
+});
+
+ 
+桌面端仍然保留“关闭窗口后隐藏到托盘/后台”的体验，鸿蒙端则正常退出。
+ 
+3. 加主进程和渲染进程日志桥接
+ 
+白屏问题排查时，最怕只看到窗口而看不到页面日志。所以在 main.js 中把渲染进程日志转发到主进程：
+ 
+mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+  console.log(`[markdownify-renderer:${level}] ${message} (${sourceId}:${line})`);
+});
+
+ 
+同时监听加载失败和渲染进程退出：
+ 
+mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+  runtime.warn('mainWindow.did-fail-load', `${errorCode} ${errorDescription} ${validatedURL || ''}`);
+});
+
+mainWindow.webContents.on('render-process-gone', (_event, details) => {
+  runtime.warn('mainWindow.render-process-gone', JSON.stringify(details));
+});
+
+ 
+这样在鸿蒙 hilog 中就可以看到类似日志：
+ 
+[markdownify-runtime] platform=openharmony isOhos=true ...
+[markdownify-renderer:1] [markdownify-renderer] index.html loaded ...
+
+ 
+
+ 
+ 
+六、第四步：适配渲染进程中的 Electron API
+ 
+渲染进程主要涉及 app/scripts/app.js、app/scripts/ipc_renderer.js、config.js。
+ 
+1. 配置路径改为 remote 优先、IPC 兜底
+ 
+配置模块 config.js 使用 conf 保存用户配置。桌面端可以通过 @electron/remote.app.getPath('userData') 获取配置目录，但鸿蒙运行时中这个能力可能不可用，所以增加 IPC 兜底：
+ 
+const getUserDataPath = () => {
+  try {
+    const { app } = require('@electron/remote');
+    if (app && typeof app.getPath === 'function') {
+      return app.getPath('userData');
+    }
+  } catch (_) {}
+
+  try {
+    const { ipcRenderer } = require('electron');
+    return ipcRenderer.sendSync('markdownify:get-path', 'userData');
+  } catch (_) {
+    return '';
+  }
+};
+
+ 
+主进程中对应提供：
+ 
+ipcMain.on('markdownify:get-path', (event, name) => {
+  event.returnValue = runtime.safeCall(
+    `app.getPath(${name})`,
+    () => app.getPath(name || 'userData'),
+    ''
+  );
+});
+
+ 
+2. 文件对话框改为 remote 优先、IPC 兜底
+ 
+打开、保存、导出 PDF 都依赖系统文件对话框。适配后渲染进程不再直接假设 dialog 一定存在，而是封装成：
+ 
+var showSaveDialogSync = options => {
+  if (dialog && typeof dialog.showSaveDialogSync === 'function') {
+    try {
+      return dialog.showSaveDialogSync(options || {});
+    } catch (error) {
+      console.warn('[markdownify-runtime] remote save dialog failed:', error.message);
+    }
+  }
+
+  try {
+    return ipc.sendSync('markdownify:show-save-dialog-sync', options || {});
+  } catch (error) {
+    console.warn('[markdownify-runtime] ipc save dialog failed:', error.message);
+    return undefined;
+  }
+};
+
+ 
+主进程提供同步 IPC：
+ 
+ipcMain.on('markdownify:show-save-dialog-sync', (event, options) => {
+  showDialogSync(event, 'showSaveDialogSync', options);
+});
+
+ 
+这样桌面端能继续走原来的对话框能力，鸿蒙端即使部分 API 不可用，也不会因为一个未定义对象导致整个页面脚本崩溃。
+ 
+3. 鸿蒙端接管快捷键
+ 
+桌面端可以使用 electron-localshortcut 注册快捷键，但鸿蒙端没有这个桌面能力。因此渲染进程里为鸿蒙运行时增加了键盘事件兜底：
+ 
+document.addEventListener('keydown', event => {
+  var command = event.ctrlKey || event.metaKey;
+  if (!command) {
+    return;
+  }
+
+  var key = (event.key || '').toLowerCase();
+
+  if (key === 's') {
+    saveFile();
+    event.preventDefault();
+    event.stopPropagation();
+  }
+});
+
+ 
+实际代码里覆盖了常用功能：
+ 
+Ctrl+N 新建
+Ctrl+O 打开
+Ctrl+S 保存
+Ctrl+Shift+S 另存为
+Ctrl+B 加粗
+Ctrl+I 斜体
+Ctrl+F 查找
+Ctrl+Shift+F 替换
+ 
+这部分属于运行时交互适配，不改变 Markdown 编辑器的业务逻辑。
+ 
+ 
+ 
+七、第五步：把普通 Electron 应用同步到鸿蒙 HAP 资源目录
+ 
+鸿蒙 Electron HAP 最终不是直接读取项目根目录，而是读取 HAP 包内的资源目录：
+ 
+web_engine/src/main/resources/resfile/resources/app
+
+ 
+所以新增了同步脚本 scripts/build-ohos-package.js，它会把普通 Electron 运行所需文件复制到 HAP 资源目录。
+ 
+同步内容包括：
+ 
+[
+  'main.js',
+  'runtime.js',
+  'tray.js',
+  'config.js',
+  'index.html'
+].forEach(file => copy(file));
+
+copy('app');
+writeRuntimePackageJson();
+copyRuntimeNodeModules();
+
+ 
+这里没有直接把整个项目粗暴复制进去，而是只复制运行期必要文件，并根据 package-lock.json 复制生产依赖。这样能减少 HAP 体积，也能避免把开发脚本、缓存、无关文件带进包里。
+ 
+同步命令：
+ 
+cd /Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master
+npm run ohos:sync
+
+ 
+执行后会输出：
+ 
+OpenHarmony app resources written to:
+/Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master/ohos_hap/web_engine/src/main/resources/resfile/resources/app
+
+ 
+
+ 
+八、第六步：构建 OpenHarmony HAP
+ 
+迁移后的 package.json 增加了三个鸿蒙相关脚本：
+ 
+{
+  "scripts": {
+    "build:ohos": "node scripts/build-ohos-package.js",
+    "ohos:sync": "OHOS_MARKDOWNIFY_OUT=ohos_hap/web_engine/src/main/resources/resfile/resources/app npm run build:ohos",
+    "ohos:build": "node scripts/build-ohos-hap.js"
+  }
+}
+
+ 
+其中：
+ 
+build:ohos：只生成 OpenHarmony Electron 运行资源。
+ohos:sync：把资源同步到 HAP 工程内部。
+ohos:build：先同步资源，再调用 Hvigor 构建 HAP。
+ 
+命令行构建：
+ 
+cd /Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master
+npm run ohos:build
+
+ 
+构建成功后，签名包位置是：
+ 
+/Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master/ohos_hap/electron/build/default/outputs/default/electron-default-signed.hap
+
+ 
+也可以直接用 DevEco Studio 打开：
+ 
+/Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master/ohos_hap
+
+ 
+然后选择 electron entry 模块运行。
+ 
+当前 bundleName 暂时保持为：
+ 
+com.huawei.ohos_electron
+
+ 
+这样可以复用当前电脑已经存在的调试签名配置。如果后续要换成正式包名，比如 com.example.markdownify，需要在 DevEco Studio 的 Signing Configs 里重新生成签名，再同步修改 AppScope/app.json5。
+ 
+ 
+九、第七步：安装并启动 HAP
+ 
+如果命令行环境中有 hdc，可以直接安装：
+ 
+/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/hdc install -r \
+  /Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master/ohos_hap/electron/build/default/outputs/default/electron-default-signed.hap
+
+ 
+启动：
+ 
+/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/hdc shell aa start \
+  -b com.huawei.ohos_electron \
+  -a EntryAbility
+
+ 
+如果需要确认设备是否在线：
+ 
+/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/hdc list targets
+
+ 
+正常会看到类似：
+ 
+127.0.0.1:5555
+
+ 
+十、白屏问题定位：窗口起来了，但内容区域不显示
+ 
+迁移过程中最关键的问题是：鸿蒙模拟器上窗口标题已经出现，例如 New document - Markdownify，说明 HAP 已安装、EntryAbility 已启动、Electron 主窗口也创建成功，但窗口内容区域是白屏。
+ 
+当时日志里反复出现：
+ 
+StartChildProcess command --use-gl=egl
+GPU state invalid after WaitForGetOffsetInRange
+GPU process start times: 131
+GPU process start times: 132
+GPU process start times: 133
+
+ 
+这个现象说明问题不在 Markdownify 的业务脚本，而是在 Chromium/Electron GPU 子进程反复重启。页面可能已经加载，但渲染面没有正常画出来。
+ 
+1. 先确认 JS 是否真的加载
+ 
+为避免把渲染层问题误判成 JS 业务错误，在 index.html 入口增加了非常轻量的日志：
+ 
+<script>
+  console.log('[markdownify-renderer] index.html loaded');
+  window.onerror = function (message, source, lineno, colno, error) {
+    var detail = error && error.stack ? error.stack : message;
+    console.error('[markdownify-renderer] window.onerror', detail, source, lineno, colno);
+  };
+  window.addEventListener('unhandledrejection', function (event) {
+    console.error('[markdownify-renderer] unhandledrejection', event.reason);
+  });
+</script>
+
+ 
+启动后能在 hilog 里看到：
+ 
+[markdownify-renderer] index.html loaded
+
+ 
+这说明页面入口确实加载了，白屏优先怀疑 GPU/XComponent 渲染链路。
+ 
+2. 修正鸿蒙运行时识别
+ 
+一开始只用 process.platform === 'ohos' 判断鸿蒙，结果并不可靠。模拟器日志证明鸿蒙运行时中实际输出过：
+ 
+platform=openharmony
+
+ 
+因此 runtime.js 增加了路径识别：
+ 
+const pathLooksLikeOhos = [
+  '/data/storage/el1/bundle/electron/resources/resfile',
+  '/resources/resfile/resources/app',
+  '/bundle/electron/resources/resfile'
+].some(fragment => pathHints.includes(fragment));
+
+ 
+修正后可以在日志中看到：
+ 
+[markdownify-runtime] platform=openharmony isOhos=true envLooksLikeOhos=false pathLooksLikeOhos=true
+
+ 
+这一步非常重要。只有 isOhos=true，主进程里的鸿蒙兼容分支才会执行。
+ 
+3. 禁用鸿蒙模拟器上的 EGL/GPU 路径
+ 
+仅在 main.js 里调用 Electron 的命令行参数还不够，因为鸿蒙壳工程里还有更底层的默认启动参数。关键文件是：
+ 
+ohos_hap/web_engine/src/main/ets/common/CommandLineAdapter.ets
+
+ 
+原始默认参数中写死了：
+ 
+"--use-gl=egl",
+
+ 
+模拟器白屏时，日志里也一直能看到 GPU 子进程使用：
+ 
+--use-gl=egl
+
+ 
+因此需要把它改为：
+ 
+"--use-gl=disabled",
+
+ 
+同时增加禁用 GPU/硬件加速相关参数：
+ 
+"--disable-gpu",
+"--disable-gpu-compositing",
+"--disable-gpu-rasterization",
+"--disable-accelerated-2d-canvas",
+"--disable-accelerated-video-decode",
+"--disable-zero-copy",
+"--disable-gpu-watchdog",
+"--disable-features=EnableDrDc,SpareRendererForSitePerProcess,Vulkan,UseSkiaRenderer,CanvasOopRasterization",
+
+ 
+主进程中也同步增加：
+ 
+if (runtime.isOhos) {
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch('use-gl', 'disabled');
+  app.commandLine.appendSwitch(
+    'disable-features',
+    'EnableDrDc,SpareRendererForSitePerProcess,Vulkan,UseSkiaRenderer,CanvasOopRasterization'
+  );
+}
+
+ 
+重新构建、安装并启动后，日志从大量 --use-gl=egl 和 GPU 重启，变成：
+ 
+StartChildProcess command --use-gl=angle
+StartChildProcess command --use-gl=disabled
+
+ 
+并且高频的：
+ 
+GPU state invalid after WaitForGetOffsetInRange
+GPU process start times: 100+
+
+ 
+不再继续刷屏，页面正常显示。
+ 
+十一、为什么不能直接改业务层
+ 
+这次迁移中特别要避免一个误区：看到按钮没反应、页面白屏，就直接去改 Markdown 编辑器业务代码。
+ 
+实际上，这个项目的核心业务包括：
+ 
+Markdown 输入
+Markdown 转 HTML 预览
+CodeMirror 编辑器
+marked/showdown/katex/highlightjs 渲染
+工具栏格式化操作
+文件打开、保存、导出
+ 
+这些逻辑本身在桌面 Electron 中是可运行的。真正需要改的是业务代码和 Electron 运行时之间的连接层：
+ 
+remote 不稳定，就改成 @electron/remote 加 IPC 兜底。
+文件对话框不稳定，就让主进程代调。
+桌面菜单/托盘/快捷键不适合鸿蒙，就按运行时能力启用或跳过。
+GPU/EGL 在模拟器上白屏，就调整鸿蒙壳层启动参数。
+ 
+也就是说，迁移策略是“运行时适配优先，业务逻辑最小侵入”。这样后续如果要升级 Markdownify 功能，桌面端和鸿蒙端仍然可以共享同一套业务代码。
+ 
+十二、常用命令汇总
+ 
+桌面 Electron 运行：
+ 
+cd /Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master
+npm start
+
+ 
+桌面 Electron 带日志运行：
+ 
+ELECTRON_ENABLE_LOGGING=1 npm start
+
+ 
+同步 Electron 应用到 HAP 资源目录：
+ 
+npm run ohos:sync
+
+ 
+构建 HAP：
+ 
+npm run ohos:build
+
+ 
+安装 HAP：
+ 
+/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/hdc install -r \
+  /Users/luqingjiedemac/AtomGit_obj/new/electron-markdownify-master/ohos_hap/electron/build/default/outputs/default/electron-default-signed.hap
+
+ 
+启动应用：
+ 
+/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/hdc shell aa start \
+  -b com.huawei.ohos_electron \
+  -a EntryAbility
+
+ 
+查看运行时诊断日志：
+ 
+/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/hdc shell hilog -x -e markdownify
+
+ 
+查看 GPU 参数日志：
+ 
+/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/hdc shell hilog -x -e use-gl
+
+ 
+查看 GPU 错误：
+ 
+/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/hdc shell hilog -x -e 'GPU state'
+
+ 
+十三、迁移检查清单
+ 
+迁移类似 Electron 项目时，可以按下面的顺序检查：
+ 
+普通 Electron 版本是否能用 npm start 正常启动。
+是否还在使用旧的内置 remote。
+渲染进程里是否直接调用了主进程模块，例如 app、dialog、Menu。
+是否依赖系统托盘、桌面菜单栏、本地全局快捷键。
+是否有 nodeIntegration、contextIsolation、sandbox 等窗口配置差异。
+HAP 资源目录是否包含 main.js、index.html、业务静态资源和运行期 node_modules。
+ohos_hap/web_engine/src/main/resources/resfile/resources/app 是否是最新同步结果。
+CommandLineAdapter.ets 是否还保留 --use-gl=egl。
+hilog 里是否能看到 isOhos=true。
+hilog 里是否还能持续刷 GPU state invalid。
+ 
+十四、总结
+ 
+这次迁移的关键不是把 Markdownify 改成一个全新的鸿蒙应用，而是把一个已有的 Electron 桌面项目包进 OpenHarmony Electron 运行时，并补齐两类兼容层。
+ 
+第一类是 Electron API 兼容层。旧项目依赖的 remote、桌面菜单、托盘、本地快捷键、文件对话框，在新版 Electron 和鸿蒙 Electron 中都需要安全调用和 IPC 兜底。
+ 
+第二类是鸿蒙壳层启动参数兼容。模拟器白屏并不是简单的页面 JS 错误，而是 GPU 子进程在 --use-gl=egl 路径下反复异常。真正解决问题的是同时修改 JS 主进程参数和 CommandLineAdapter.ets 的默认启动参数，让鸿蒙模拟器走稳定的非 EGL 路径。
+ 
+最终项目达到的状态是：
+ 
+macOS 桌面端可以继续 npm start。
+鸿蒙端可以 npm run ohos:sync 同步资源。
+鸿蒙端可以 npm run ohos:build 构建 signed HAP。
+HAP 安装到鸿蒙模拟器后可以正常显示 Markdownify 页面。
+业务编辑逻辑保持基本不变，主要改动集中在运行时兼容和打包工程。

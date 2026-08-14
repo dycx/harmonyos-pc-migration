@@ -1,0 +1,3 @@
+# 如何配置HarmonyOS Electron编译环境
+
+在HarmonyOS上使用Electron开发，有大量场景需要编译，例如Electron调用C/C++、Electron调用ArkTS等，如何配置编译环境？

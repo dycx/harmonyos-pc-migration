@@ -1,0 +1,185 @@
+一文看懂 OpenHarmony 跨平台框架生态：9 大仓库全解析
+
+随着开源鸿蒙（OpenHarmony）生态快速成熟，跨平台开发已成为多端部署的主流方案。开源鸿蒙跨平台框架相关SIG 群，已完成对KMP、Cordova、React Native、Flutter、Ionic、Chromium、Electron、Qt 等主流技术栈的深度适配，让 Android/iOS/Web/桌面应用可低成本迁移至鸿蒙全场景设备。
+
+本文基于 atomgit 官方仓库，系统梳理 9 大跨平台 SIG 核心能力、适用场景与技术亮点，帮你快速选型、高效落地鸿蒙应用。
+
+
+一、KMP‑CMP：Kotlin 多平台原生底座
+
+仓库地址：https://atomgit.com/CPF-KMP-CMP
+
+定位：Kotlin Multiplatform 鸿蒙原生适配，主打共享业务逻辑、原生渲染
+核心能力
+鸿蒙 KMP 工具链插件：支持工程创建、构建、运行、调试全链路
+基础库矩阵：kotlinx‑crypto、SQLiter、sqldelight、Kermit 等
+轻量级 DI：Koin 跨平台依赖注入
+
+
+技术亮点
+与鸿蒙 ArkUI 天然融合，性能接近纯原生
+一次编写，Android/iOS/鸿蒙三端共享逻辑
+
+
+适合场景：安卓/Kotlin 原生团队、金融/工具类强逻辑应用
+
+
+二、Cordova：Web 混合应用极速迁移
+
+仓库地址：https://atomgit.com/CPF-Cordova
+
+定位：Apache Cordova 鸿蒙官方 SIG，Web 混合应用零代码迁移方案
+核心能力
+一键生成鸿蒙原生 APP，原 Android/iOS 项目几分钟完成迁移
+完整插件生态：文件、相机、陀螺仪、电池、导航栏、扫码、定位等
+命令行工具 hcordova：工程化管理、编译、运行
+
+
+技术亮点
+完全遵循官方接口，无额外学习成本
+低代码/零代码迁移，大幅节省人力
+
+
+适合场景：H5 混合应用、信息展示类、低门槛快速上线项目
+
+
+三、OpenHarmony‑RN：React Native 高性能适配
+
+仓库地址：https://atomgit.com/OpenHarmony-RN
+
+定位：React Native 鸿蒙系统级渲染后端，RN 生态完整落地
+核心能力
+完整 Fabric 新架构支持，Hermes 引擎优化
+深度融合 ArkUI NDK，性能逼近原生
+版本矩阵：0.72 LTS / 0.77 LTS / 0.82 Stable / 0.84 预览
+NPM 包：@react‑native‑oh/react‑native‑harmony
+
+
+技术亮点
+复用 RN 生态与开发习惯
+动态化能力、热更新支持
+
+
+适合场景：React 技术栈、动态化需求强、电商/社交类应用
+
+
+四、OpenHarmony‑Flutter：自绘引擎全生态兼容
+
+仓库地址：https://atomgit.com/OpenHarmony-flutter
+
+定位：Flutter SDK/Engine 鸿蒙官方适配，Dart 跨端首选
+核心能力
+完整 Flutter 引擎移植，自绘 UI 无适配损耗
+大量官方插件已适配：image_picker、camera、webview_flutter、shared_preferences、path_provider 等 30+
+多版本支持：3.7 / 3.22 / 3.27 / 3.35/3.41
+
+
+技术亮点
+纯 Dart 库无需改造，直接复用
+一致性 UI、高性能、跨设备流畅度拉满
+
+
+适合场景：Flutter 团队、强交互/动画/跨设备一致性应用
+
+
+五、CPF‑Ionic：Capacitor 跨端迁移专属
+
+仓库地址：https://atomgit.com/CPF-Ionic
+
+定位：基于 Cordova 衍生，专注 Ionic + Capacitor 鸿蒙化
+核心能力
+核心框架：openHarmony‑capacitor + capacitor‑cli
+Capacitor 官方插件全覆盖：app、camera、device、filesystem、geolocation、network、status‑bar 等
+Ionic Native 常用插件适配：file、camera、clipboard、network 等
+
+
+技术亮点
+对齐 Capacitor 接口，迁移无痛
+面向 Web 前端/混合应用开发者
+
+
+适合场景：Ionic/Capacitor 现有项目、PWA 迁移鸿蒙
+
+
+六、CPF‑Chromium：浏览器与渲染内核支撑
+
+仓库地址：https://atomgit.com/CPF-Chromium
+
+定位：鸿蒙平台 Chromium 内核与图形渲染基础设施
+核心项目
+chromium、angle、dawn、skia、ffmpeg、webrtc、pdfium
+
+
+价值
+为 WebView、浏览器、视频、Canvas 渲染提供底层能力
+支撑跨平台框架的 Web/图形/音视频基础能力
+
+
+适合场景：浏览器、视频播放器、图形渲染、Web 引擎二次开发
+
+
+七、CPF‑ApplicationTPC：通用三方库合集
+
+仓库地址：https://atomgit.com/CPF-ApplicationTPC
+
+定位：鸿蒙通用三方库托管，补齐工具/组件/网络/存储/媒体能力
+代表项目
+ohos_vlc：媒体播放核心库
+ohos_ksoap2：SOAP 网络通信
+ohos_logan：前端日志收集分析
+ohos_onnxruntime：机器学习推理框架
+视图动画、状态栏、APNG 渲染、日历组件等
+
+
+价值：快速补齐鸿蒙生态常用组件，减少重复造轮子
+适合场景：所有鸿蒙应用，快速集成基础能力
+
+
+八、CPF‑Electron：桌面应用跨平台入口
+
+仓库地址：https://atomgit.com/CPF-Electron
+
+定位：Electron 鸿蒙桌面适配，Web 技术栈开发 PC 应用
+核心价值
+复用 Web 技术栈构建鸿蒙桌面原生应用
+支持窗口、菜单、系统托盘、本地文件等桌面能力
+
+
+适合场景：桌面工具、客户端软件、现有 Electron 项目迁移
+
+
+九、CPF‑qt：C++ 高性能桌面/嵌入式方案
+
+仓库地址：https://atomgit.com/CPF-qt
+
+定位：Qt 官方鸿蒙适配，C++ 高性能图形界面框架
+核心价值
+成熟稳定、强渲染、低延迟，适合工业/嵌入式/桌面
+跨平台历史最久，生态极完善
+
+
+适合场景：工业软件、桌面工具、车载、嵌入式、高性能图形应用
+
+
+跨平台框架选型速查表（2026 最新）
+
+
+框架技术栈迁移成本性能适合团队/场景
+KMPKotlin中极高安卓原生、强业务逻辑
+FlutterDart低高Flutter 团队、强 UI/动画
+RNReact/JS低中高React 前端、动态化
+CordovaHTML/JS极低中Web 混合、快速上线
+Ionic/CapacitorIonic/JS极低中Ionic 现有项目
+ElectronWeb低中桌面 PC 应用
+QtC++中极高嵌入式/工业/桌面
+
+总结与建议
+
+OpenHarmony 跨平台 SIG 已形成全覆盖、多技术栈、低门槛的迁移体系：
+
+Web 前端 → 优先 RN / Cordova / Ionic
+移动端原生 → 优先 KMP / Flutter
+桌面/嵌入式 → 优先 Electron / Qt
+基础能力补齐 → 直接用 ApplicationTPC 三方库
+
+所有框架均遵循开源规范，持续迭代更新，是现有应用一键上鸿蒙的最优路径。
