@@ -1580,21 +1580,36 @@ cd ohos_hap
 
 > 本节把"拿到模板到跑起完整应用（前端 + SpringBoot 后端）"的每一步串起来，是第 2/3/4 章内容的落地执行版。**本地已备好离线模板副本**：`templates/ohos_electron_hap-main/`（188MB，内置 Electron 34 运行时：Chromium 132.0.6834.161 / Node v20.18.1，已从 `libelectron.so` 版本字符串核实；模板来源与使用说明见 `templates/README.md`）。
 
-### 6.6.1 第一步：导入模板（两种来源二选一）
+### 6.6.1 第一步：导入模板（获取方式三选一，地址已验证 2026-08）
 
 **来源 A：本地离线副本（已下载，推荐先用它跑通流程）**
 ```bash
 # 模板位置：<工作区>/templates/ohos_electron_hap-main/
 # DevEco Studio → File → Open → 选择该目录（⚠️ 是 Open 导入，不是 New Project）
+# 说明：templates/README.md 含全部下载地址、版本信息与使用说明
 ```
 
 **来源 B：官方预编译包（正式开发用，需华为云账号）**
 ```bash
 # 1) 华为云 CodeHub 下载 v34.6.3-20260105.1-release.zip（约数百 MB）
-#    https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home
+#    地址：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home
+#    （需华为云账号登录；Releases/产物区找形如 v34.6.3-20260105.1-release.zip 的文件，也有 E37 更新版）
 # 2) 解压 → DevEco Studio → File → Open 导入（工程内即 ohos_hap 壳工程）
 ```
-⚠️ 导入后先做三件事：① 确认 `electron/libs/arm64-v8a/` 有 `libelectron.so/libadapter.so/libffmpeg.so/libc++_shared.so`（运行时）；② `build-profile.json5` 的 SDK 版本与你安装的匹配；③ 配置调试签名（DevEco 自动签名，见 6.3.1）。
+
+**来源 C：GitHub 社区镜像（无需账号，与官方模板同内容）**
+```bash
+# 镜像1（本模板来源）：https://github.com/ohosvscode/ohos_electron_hap
+#   git clone https://github.com/ohosvscode/ohos_electron_hap.git
+#   或 zip 直链：https://codeload.github.com/ohosvscode/ohos_electron_hap/zip/refs/heads/main
+# 镜像2（备份）：https://github.com/ljlVink/ohos-cherrystudio-electron-base
+#   zip 直链：https://codeload.github.com/ljlVink/ohos-cherrystudio-electron-base/zip/refs/heads/main
+# 官方文档仓库（资料最全，含 API 索引/HNP 指南）：https://gitcode.com/openharmony-sig/electron
+```
+
+> 模板下载地址完整总表见 `templates/README.md`（4 个来源：华为云 CodeHub 官方 Release / gitcode 官方源码仓 / GitHub 双镜像，均标注账号要求与内容说明，2026-08 已验证可达）。
+
+⚠️ 导入后先做三件事：① 确认 `electron/libs/arm64-v8a/` 有 `libelectron.so/libadapter.so/libffmpeg.so/libc++_shared.so`（运行时；注意 libelectron.so 160MB 不在 GitHub 仓库中，从原机器拷贝或官方包获取）；② `build-profile.json5` 的 SDK 版本与你安装的匹配；③ 配置调试签名（DevEco 自动签名，见 6.3.1）。
 
 ### 6.6.2 第二步：放置前端产物（Electron 应用代码）
 
