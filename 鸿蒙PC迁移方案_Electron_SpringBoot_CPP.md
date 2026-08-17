@@ -3,6 +3,7 @@
 > 版本：v1.0
 > 适用对象：有 Electron + Java（Spring Boot）经验、无鸿蒙开发经验的团队
 > 目标环境：公司内网、网络受限，本文档**自包含、可离线照做**
+> 配套专项文档：《鸿蒙PC迁移专项_后端部署与网络证书方案.md》——JVM 后端部署（jar 放置/打包/启动）、localhost 域名映射、网络打点（ping 替代）、沙箱模型（网络/文件系统）、证书处理（keytool/TLS/mTLS）的完整专项方案
 > 事实依据：工作区调研素材——《HarmonyOS_PC_Electron_SpringBoot_可行性调研报告.md》（下称《可行性报告》）、《research/Electron鸿蒙化调研报告.md》（下称《Electron调研报告》）、《harmonyos-java-backend-research.md》（下称《Java后端调研报告》）、《harmonyos-pc-dev-alternatives-report.md》（下称《替代方案报告》）、官方仓库 README 快照《research/rawgitcode_electron_readme.md》（下称《官方README》）、官方 HNP 文档快照《research/hnp打包与fork指导文档.md》（下称《HNP文档》）、五步迁移 FAQ 快照、三篇实战迁移文章（Electron35 迁移、markdownify 迁移、上架实录）。所有"⚠️ 需实测/未验证"均来自素材中的待核实项，请勿当作已证实结论。
 >
 > 重要前提（务必先读）：
