@@ -48,6 +48,39 @@ https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c0
 
 ---
 
+## 0.2 ⚠️ 关于 Electron 37：最新 ≠ 最稳（若你编译错误的版本是 37）
+
+**结论：不是"官方最新版本代码都有问题"，而是 E37 这个特定版本处于"最年轻、最不成熟"状态，已知存在多项官方 issue。建议改用 E34。**
+
+### E37 的背景（✅ 官方决策记录核实）
+
+| 事实 | 来源 |
+|---|---|
+| Electron 37（Chromium 138 / Node 22.16.0）**2025-10-21 才在 OpenHarmony 架构 SIG 第 182 次会议获批**，比 E34 晚一年多 | SIG 182 会议纪要 |
+| 获批时**遗留问题**："Electron 给外部伙伴使用需要先孵化毕业，有完善的版本发布流程、完整的 CI 流程"——即批准时尚未完全"毕业" | SIG 182 会议纪要 |
+| E34 是官方**主推成熟版**：预编译包持续发布（v34.6.3 → v34.8.1），迁移教程/上架案例（"厨房里的化学"）均走 E34 路线 | 官方迁移 FAQ、上架实录 |
+
+### E37 的已知 issue（✅ gitcode 官方仓库 issue 列表核实，2026-08）
+
+| issue | 状态 | 说明 |
+|---|---|---|
+| "在华为云下载的 **electron37.2 版本框架如何运行？现在有报错**，如何处理？" | open（2026-06） | **其他人同样遇到 E37.2 运行报错** |
+| "在 37.2 electron 版本加载 node_sqlite3.node 时报错" | open（2026-05） | **E34 可用的 addon 在 E37 上报错**——E37 与 E34 的 addon ABI 不兼容，需按 E37 重新编译 |
+| "v37.2.0 的 README 中 repo 拉取 chromium138 代码的分支不正确" | closed | 文档/分支错误 |
+| "v37.2.0 分支需要添加 patches 及对编译脚本的修改" | closed | **源码编译需要额外补丁** |
+
+### 建议
+
+1. **首选：改用 E34 官方包**（`v34.8.1-20260429.1-release.zip`，见 0.1）——成熟稳定、教程/案例验证充分；你的业务代码迁移逻辑不受 Electron 版本影响（API 层一致）。
+2. **若必须用 E37**：
+   - 先确认拿到的 Release 与 SDK 版本匹配（排查手册 §1.1）；
+   - 编译错误按本手册补丁模式处理（E37 壳工程若与 E34 同构，`StringUtil.filterFileDocs`/`CommonInterface` 补丁逻辑适用，但**以 E37 实际报错文件为准**）；
+   - Node addon（node_sqlite3 等）必须按 E37 的 Node 22 重新交叉编译（E34 的产物不能复用）；
+   - 源码编译路线需按 issue 反馈补 patches。
+3. **跟踪官方修复**：E37 相关 issue 均在官方仓库（gitcode.com/openharmony-sig/electron/issues），修复后会更新 Release；届时再升级。
+
+---
+
 ## 1. 错误一修复：StringUtil.filterFileDocs 未定义
 
 ### 1.1 错误与根因
