@@ -43,4 +43,14 @@ export default class StringUtil {
     });
     return copy;
   }
+
+  // 补丁：readPasteBoardURI 依赖的缺失方法（单个文件 URI → 路径字符串）
+  // 根因：GitHub 镜像模板代码不完整（issue #3：filterFileDocs 未定义）
+  static filterFileDocs(uri: string): string {
+    // Resolve Chinese garbled characters
+    let path = decodeURI(uri);
+    // Convert to uri get systeam path
+    let fileUriObj = new fileUri.FileUri(path);
+    return fileUriObj.path;
+  }
 }

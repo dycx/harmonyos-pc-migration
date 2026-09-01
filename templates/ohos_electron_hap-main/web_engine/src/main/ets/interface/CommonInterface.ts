@@ -33,6 +33,7 @@ import type GestureEvent from '@ohos.multimodalInput.gestureEvent';
 import type ConfigurationConstant from '@ohos.app.ability.ConfigurationConstant';
 import type common from '@ohos.app.ability.common';
 import type window from '@ohos.window';
+import type textRecognition from '@kit.CoreVisionKit';   // 补丁：TextWord 复用 SDK OCR 类型（包名按你的 SDK 调整）
 
 export interface ILoginInfo {
   status: boolean;
@@ -41,6 +42,35 @@ export interface ILoginInfo {
   openId: string;
   idToken: string;
   anonymousPhone: string;
+}
+
+// ★补丁：以下 4 个声明为 GitHub 镜像模板缺失（issue #3），字段从 adapter 用法反推
+export interface BatteryInfo {
+  batterySOC: number;
+  chargingStatus: number;
+  isBatteryPresent: boolean;
+  estimatedRemainingChargeTime: number;
+  nowCurrent: number;
+  remainingEnergy: number;
+}
+
+export interface OcrAdapterImage {
+  width: number;
+  height: number;
+  buff: ArrayBuffer;
+}
+
+// 方案 1：直接复用 SDK 类型（推荐）；编译不过换下方注释的宽松接口
+export type TextWord = textRecognition.Word;
+// export interface TextWord {
+//   value: string;
+//   [key: string]: string | number | Object | undefined;
+// }
+
+export interface PowerMonitor {
+  OnSuspend: () => void;
+  OnResume: () => void;
+  OnPowerStateChanged: () => void;
 }
 
 export interface ILogin {
@@ -83,6 +113,7 @@ export interface NativeContext {
   runOtherProcessType: (processType: number) => void;
   registerLifecycle: () => void;
   openFile: (filePath: string) => void;
+  PowerMonitor: PowerMonitor;   // ★补丁：PowerMonitorAdapter 依赖（issue #3）
   readImageFromReceiver: (receiver: image.ImageReceiver) => image.Image;
   JSBind: JSBind;
   OnPanEventCB: (action: number, id: string, event: GestureEvent) => void;
