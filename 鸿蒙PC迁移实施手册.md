@@ -366,7 +366,7 @@
 |---|---|---|---|---|---|
 | 1 | DevEco Studio 安装包 | 6.1.x 全平台安装包 | https://developer.huawei.com/consumer/cn/deveco-studio/ | 华为开发者账号 | 同时可用于提取 SDK/工具链 |
 | 2 | HarmonyOS SDK（离线） | API 20+/23 | DevEco 官网 SDK 下载页（同 DevEco 下载区） | 华为开发者账号 | 若 SDK Manager 在线下载不可用则走离线包 |
-| 3 | **Electron 鸿蒙版预编译包** | `v34.6.3-20260105.1-release.zip`（约数百 MB） | 华为云 CodeHub：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home | **华为云账号** | 免编译直接开发（《Electron调研报告》§2.3）；内网重点资源，**放第一位下载**。✅ **本地已有等价离线副本**：`templates/ohos_electron_hap-main/`（E34 运行时，Chromium 132/Node 20.18.1，见 2.6.1 来源 A），无华为云账号可先用它跑通流程，正式开发再核对官方包 |
+| 3 | **Electron 鸿蒙版预编译包** | `v34.6.3-20260105.1-release.zip`（约数百 MB） | 华为云 CodeHub：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home?ref=electron34-release | **华为云账号** | 免编译直接开发（《Electron调研报告》§2.3）；内网重点资源，**放第一位下载**。✅ **本地已有等价离线副本**：`templates/ohos_electron_hap-main/`（E34 运行时，Chromium 132/Node 20.18.1，见 2.6.1 来源 A），无华为云账号可先用它跑通流程，正式开发再核对官方包 |
 | 4 | Node.js 安装包 | `node-v20.18.1`（win-x64 / macos-arm64 / linux-x64） | https://nodejs.org/dist/v20.18.1/ 或镜像 https://npmmirror.com/mirrors/node/ | 无 | |
 | 5 | JDK 17（构建用） | Temurin 17 LTS | https://adoptium.net/temurin/releases/?version=17 | 无 | |
 | 6 | npm 依赖离线包 | 你的前端全部 dependencies（**不含 devDependencies 的"运行期"依赖全集**） | 见 2.2.1 `npm pack` 方案 | 无 | 含鸿蒙所需三方库源码包 |
@@ -550,7 +550,7 @@ cp ${source_path}/locales/en-US.pak ${destination_path}/locales
 | 来源 | 获取方式 | 账号要求 | 说明 |
 |---|---|---|---|
 | **A. 本地离线副本（推荐先用它跑通流程）** | `<工作区>/templates/ohos_electron_hap-main/`，DevEco Studio → File → Open → 选择该目录（⚠️ 是 Open 导入，不是 New Project） | 无 | 已下载；188MB，内置 Electron 34 运行时（Chromium 132.0.6834.161 / Node v20.18.1，已从 `libelectron.so` 版本字符串核实） |
-| **B. 官方预编译包（正式开发用）** | 华为云 CodeHub 下载 `v34.6.3-20260105.1-release.zip`（约数百 MB）→ 解压 → DevEco Open 导入（工程内即 ohos_hap 壳工程）；地址：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home | **华为云账号** | Releases/产物区找形如 `v34.6.3-20260105.1-release.zip` 的文件，也有 E37 更新版 |
+| **B. 官方预编译包（正式开发用）** | 华为云 CodeHub 下载 `v34.6.3-20260105.1-release.zip`（约数百 MB）→ 解压 → DevEco Open 导入（工程内即 ohos_hap 壳工程）；地址：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home?ref=electron34-release | **华为云账号** | Releases/产物区找形如 `v34.6.3-20260105.1-release.zip` 的文件，也有 E37 更新版 |
 | **C. GitHub 社区镜像（无需账号，与官方模板同内容）** | 镜像1（本模板来源）：`git clone https://github.com/ohosvscode/ohos_electron_hap.git` 或 zip 直链 `https://codeload.github.com/ohosvscode/ohos_electron_hap/zip/refs/heads/main`；镜像2（备份）：`git clone https://github.com/ljlVink/ohos-cherrystudio-electron-base.git` 或 zip 直链 `https://codeload.github.com/ljlVink/ohos-cherrystudio-electron-base/zip/refs/heads/main` | 无 | 与官方模板同内容 |
 | **D. 官方文档仓库（资料最全）** | `https://gitcode.com/openharmony-sig/electron` | GitCode 可选 | 含 API 索引/HNP 指南 |
 
@@ -2573,7 +2573,7 @@ cd ohos_hap
 **来源 B：官方预编译包（正式开发用，需华为云账号）**
 ```bash
 # 1) 华为云 CodeHub 下载 v34.6.3-20260105.1-release.zip（约数百 MB）
-#    地址：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home
+#    地址：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home?ref=electron34-release
 #    （需华为云账号登录；Releases/产物区找形如 v34.6.3-20260105.1-release.zip 的文件，也有 E37 更新版）
 # 2) 解压 → DevEco Studio → File → Open 导入（工程内即 ohos_hap 壳工程）
 ```
@@ -3198,7 +3198,7 @@ hap-sign-tool sign-app -keyAlias <别名> -signAlg SHA256withECDSA \
 ### E.1 核心官方资源
 
 - 官方仓库：https://gitcode.com/openharmony-sig/electron （含 API 索引 1294/66、hnp、addon、升级、调试、日志、Deeplink 等文档）
-- 华为云 CodeHub 预编译包：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home
+- 华为云 CodeHub 预编译包：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home?ref=electron34-release
 - 官方知识地图（持续更新）：https://developer.huawei.com/consumer/cn/forum/topic/0204203363319759021
 - 官方开发指导：https://developer.huawei.com/consumer/cn/forum/topic/0204189796759316140
 - 五步迁移 FAQ：https://developer.huawei.com/consumer/cn/forum/topic/0202206298304106575

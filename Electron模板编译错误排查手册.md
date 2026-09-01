@@ -241,7 +241,8 @@ ohpm install                       # 先生成 ~/.ohpm 缓存
 ## 6. 官方资源（需要联网时用）
 
 - 官方源码仓（含 docs、Release 说明）：https://gitcode.com/openharmony-sig/electron
-- 官方 Release 包（华为云 CodeHub，需账号）：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home
+- **官方 Release 包（华为云 CodeHub，Electron 34 分支）**：https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home?ref=electron34-release
+  （华为云账号登录；下载 `v34.8.1-20260429.1-release.zip` 等最新包；解压后 `libelectron_132/libelectron/ohos_hap` 即壳工程；完整指引见《Electron模板缺失代码修复方案》§0.1）
 - 华为官方 FAQ：
   - SDK 版本不匹配：https://developer.huawei.com/consumer/cn/doc/harmonyos-faqs-V14/faqs-app-debugging-22-0000001940675226-V14
   - build-profile 配置错误：https://developer.huawei.com/consumer/cn/doc/harmonyos-faqs-V5/faqs-project-management-2-V5

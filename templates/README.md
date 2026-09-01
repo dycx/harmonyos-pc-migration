@@ -39,7 +39,7 @@ ohos_electron_hap-main/
 
 | # | 来源 | 地址 | 账号要求 | 内容 | 备注 |
 |---|---|---|---|---|---|
-| ① | **华为云 CodeHub（官方 Release 包）** | https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home | **华为云账号**（登录后可下载 Release 产物） | `v34.6.3-20260105.1-release.zip`（E34 完整壳工程 + 运行时，数百 MB）及更新版本（如 E37） | **正式开发首选**；在 Releases/产物区找形如 `v34.6.3-20260105.1-release.zip` 的文件 |
+| ① | **华为云 CodeHub（官方 Release 包，Electron 34 分支）** | https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home?ref=electron34-release | **华为云账号**（登录后可下载 Release 产物） | `v34.8.1-20260429.1-release.zip`（2026-04，最新）或 `v34.6.3-20260105.1-release.zip`（E34 完整壳工程 + 运行时，数百 MB）；其他分支 `?ref=electron25-release` / `?ref=electron37-release` | **正式开发首选**（代码与 so 配套完整，无镜像缺失问题）；解压后 `libelectron_132/libelectron/ohos_hap` 即壳工程，用 DevEco 打开；完整指引见《Electron模板缺失代码修复方案》§0.1 |
 | ② | **官方源码仓库（gitcode，OpenHarmony SIG）** | https://gitcode.com/openharmony-sig/electron | GitCode 账号（公开可浏览，clone 可选） | Electron 鸿蒙化主仓：README、docs/api（1294 API 索引）、HNP/子进程/三方库/升级等全部官方文档；壳工程在源码目录 `src/ohos/app/` | 需要配合源码编译产物使用；**文档资料最全** |
 | ③ | **GitHub 社区镜像（本模板来源）** | https://github.com/ohosvscode/ohos_electron_hap | 无 | E34 壳工程 + 运行时（本目录即此来源） | 与官方模板 README 逐字节一致；zip 直链：https://codeload.github.com/ohosvscode/ohos_electron_hap/zip/refs/heads/main |
 | ④ | **GitHub 社区镜像（同模板另一账号）** | https://github.com/ljlVink/ohos-cherrystudio-electron-base | 无 | 同上（README 逐字节相同，同一模板） | 备份渠道；zip 直链：https://codeload.github.com/ljlVink/ohos-cherrystudio-electron-base/zip/refs/heads/main |

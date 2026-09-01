@@ -9,10 +9,42 @@
 
 | 策略 | 做法 | 适用 |
 |---|---|---|
-| **A. 换官方完整 Release 包（推荐，一劳永逸）** | 从华为云 CodeHub 下载 `v34.6.3-20260105.1-release.zip`（官方发布，代码与 so 配套完整），替代当前镜像模板 | 有华为云账号、正式开发 |
+| **A. 换官方完整 Release 包（推荐，一劳永逸）** | 从华为云 CodeHub 下载官方 Release 包（代码与 so 配套完整，见下方"官方包下载指引"），替代当前镜像模板 | 有华为云账号、正式开发 |
 | **B. 手工补齐缺失声明（本手册主体）** | 按第 1-2 章补全 5 处缺失代码，让当前模板编译通过 | 无账号/内网/先跑通流程 |
 
 > 本手册给出策略 B 的完整补丁（可直接复制粘贴）。若你后续拿到官方包，这些补丁可作参考对比。
+
+---
+
+## 0.1 官方包下载指引（策略 A 具体操作）
+
+**下载入口（Electron 34 Release，官方 CodeHub 仓库）**：
+```
+https://devcloud.cn-north-4.huaweicloud.com/codehub/project/b19f5ea8ffd4492ea8c06ca2ebf3f858/codehub/2821214/home?ref=electron34-release
+```
+
+**操作步骤**：
+1. 用**华为云账号**登录上述链接（未登录会跳转 `auth.huaweicloud.com` 认证页；个人可免费注册）。
+2. 在仓库 Releases/产物区下载形如 **`v34.8.1-20260429.1-release.zip`**（2026-04 版，教程实测所见）或 **`v34.6.3-20260105.1-release.zip`**（2026-01 版）的文件——**取最新日期版本**。
+3. 解压后目录结构（教程实测）：
+   ```
+   v34.8.1-20260429.1-release/
+   └── libelectron_132/
+       └── libelectron/
+           └── ohos_hap/        ← ★用 DevEco Studio 打开这个文件夹（File → Open）
+   ```
+4. DevEco 打开 `ohos_hap` 后：检查 `build-profile.json5` 的 `compatibleSdkVersion` 与你的 SDK 一致（见《编译错误排查手册》§1.1）、配置自动签名、Sync。
+
+**版本矩阵（CodeHub 提供三档，按需选）**：
+
+| Electron | Chromium | Node.js | 说明 |
+|---|---|---|---|
+| 25 | 114 | 18.18.2 | 老版本 |
+| **34（推荐）** | 132 | 20.18.1 | 稳定与兼容兼顾，教程推荐 |
+| 37 | 138 | 22.16.0 | 最新（2025-10 SIG 获批） |
+
+> ⚠️ 若 34 分支的 ref 链接进不去，可在 CodeHub 项目主页找其他 release 分支（`?ref=electron25-release` / `?ref=electron37-release`），或查看仓库 Release 列表。具体文件名/日期以页面实际发布为准。
+> ⚠️ 模拟器注意：Electron 鸿蒙模拟器目前仅支持 **ARM 架构 Mac**；Windows 用户请用鸿蒙 PC 真机调试。
 
 ---
 
