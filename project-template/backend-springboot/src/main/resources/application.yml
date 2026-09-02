@@ -1,0 +1,25 @@
+# 鸿蒙 PC 后端配置（模板骨架）
+server:
+  port: 8080
+  # 形态 A（终端启动，沙盒外）：绑 127.0.0.1 只允许本机访问（安全）
+  # 形态 B（应用内拉起，同沙盒）：若回环互访异常可改 0.0.0.0 排查
+  address: 127.0.0.1
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: harmony-backend
+  # 数据源（推荐 H2 纯 Java；文件放沙箱目录）：
+  # datasource:
+  #   url: jdbc:h2:/data/storage/el2/base/files/db/appdb;MODE=SQLite;AUTO_SERVER=TRUE
+  #   driver-class-name: org.h2.Driver
+  #   username: sa
+  #   password: ""
+
+logging:
+  file:
+    # 形态 A：日志写用户目录；形态 B：写沙箱 el2/base/files/logs
+    path: /data/storage/el2/base/files/logs
+  level:
+    root: INFO

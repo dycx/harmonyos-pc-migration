@@ -1,0 +1,9 @@
+{
+  "name": "harmony-pc-app-template",
+  "version": "1.0.0",
+  "description": "鸿蒙 PC 项目模板（Electron 前端 + Java 后端）— 主进程入口与前端产物",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  }
+}

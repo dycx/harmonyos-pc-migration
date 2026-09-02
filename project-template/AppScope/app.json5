@@ -1,0 +1,13 @@
+{
+  "app": {
+    "bundleName": "com.yourcompany.yourapp"   // ★改成你的包名（与 AGC 一致，上架后不可改）,
+    "vendor": "yourcompany",
+    "versionCode": 1000000,
+    "versionName": "1.0.0",
+    "icon": "$media:app_icon",
+    "label": "$string:app_name",
+    "configuration": "$profile:configuration",
+    // 默认单实例；需要多开时启用：
+    // "multiAppMode": { "multiAppModeType": "multiInstance", "maxCount": 1 }
+  }
+}

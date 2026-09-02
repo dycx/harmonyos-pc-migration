@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- ============================================================
+       鸿蒙 PC 项目模板 —— 正式后端骨架（SpringBoot）
+       用法：
+         1. 在 backend-springboot/ 目录执行：mvn clean package -DskipTests
+         2. 产物 target/app.jar 复制到壳工程：
+            cp target/app.jar ../web_engine/src/main/resources/resfile/resources/backend/app.jar
+         3. （形态 B 时）jar 会被应用内自包含 JDK 拉起；配置见 main.js CONFIG
+       说明：JDK17 兼容（鸿蒙 BiShengJDK17）；如需 JDK21 特性可升版本
+       ============================================================ -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.4.5</version> <!-- 3.4.x：支持 JDK17-24，商业支持至 2026-06；可换 3.5.x/4.0.x -->
+    <relativePath/>
+  </parent>
+
+  <groupId>com.yourcompany</groupId>
+  <artifactId>harmony-backend</artifactId>
+  <version>1.0.0</version>
+  <name>harmony-backend</name>
+  <description>鸿蒙 PC 后端（模板骨架）</description>
+
+  <properties>
+    <java.version>17</java.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- 需要数据库时（推荐 H2 纯 Java，避免 so 加载问题）：
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    -->
+  </dependencies>
+
+  <build>
+    <finalName>app</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

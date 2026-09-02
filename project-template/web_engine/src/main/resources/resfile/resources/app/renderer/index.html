@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>鸿蒙 PC 项目模板</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; background: #f5f7fa; color: #1f2937;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #111827; color: #e5e7eb; }
+    }
+    .card {
+      background: rgba(255,255,255,0.85); border-radius: 16px; padding: 40px 48px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 640px; width: 90%;
+      text-align: center;
+    }
+    @media (prefers-color-scheme: dark) { .card { background: rgba(31,41,55,0.9); } }
+    h1 { font-size: 24px; margin: 0 0 8px; }
+    .sub { opacity: 0.7; font-size: 14px; margin-bottom: 28px; }
+    .status-row { display: flex; gap: 12px; justify-content: center; margin: 16px 0; flex-wrap: wrap; }
+    .chip {
+      border-radius: 999px; padding: 6px 16px; font-size: 13px; font-weight: 600;
+      background: #e5e7eb; color: #374151;
+    }
+    .chip.ok { background: #d1fae5; color: #065f46; }
+    .chip.fail { background: #fee2e2; color: #991b1b; }
+    .btn {
+      margin-top: 12px; border: none; border-radius: 10px; padding: 10px 24px;
+      background: #2563eb; color: #fff; font-size: 15px; cursor: pointer;
+    }
+    .btn:hover { background: #1d4ed8; }
+    pre {
+      text-align: left; background: #0f172a; color: #a5f3fc; padding: 16px; border-radius: 10px;
+      font-size: 13px; overflow: auto; min-height: 60px; margin-top: 16px;
+    }
+    .env { font-size: 13px; opacity: 0.75; margin-top: 24px; line-height: 1.8; text-align: left; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>鸿蒙 PC 项目模板</h1>
+    <div class="sub">Electron 前端 + Java 后端 · 链路自检页</div>
+
+    <div class="status-row">
+      <span class="chip" id="chk-frontend">前端页面 ✅</span>
+      <span class="chip" id="chk-redirect">域名映射 ?</span>
+      <span class="chip" id="chk-backend">后端服务 ?</span>
+    </div>
+
+    <div class="status-row" style="align-items:center">
+      <span style="font-size:14px">调用地址：</span>
+      <code style="font-size:13px" id="api-url"></code>
+    </div>
+
+    <button class="btn" id="btn-ping">测试后端连通（/api/ping）</button>
+    <button class="btn" id="btn-hello" style="background:#059669">请求后端接口（/api/hello）</button>
+    <button class="btn" id="btn-echo" style="background:#7c3aed">POST 回显（/api/echo）</button>
+
+    <pre id="output">点击上方按钮，观察后端响应…</pre>
+
+    <div class="env" id="env"></div>
+  </div>
+
+  <script>
+    // ============ 前端配置 ============
+    // 与 main.js CONFIG.VIRTUAL_DOMAIN 保持一致；
+    // 主进程 webRequest 会把该域名的请求重定向到 127.0.0.1:8080
+    const API_BASE = 'http://app.localhost';
+
+    const $ = (id) => document.getElementById(id);
+    $('api-url').textContent = API_BASE;
+
+    function setChip(id, text, ok) {
+      const el = $(id);
+      el.textContent = text;
+      el.className = 'chip ' + (ok ? 'ok' : 'fail');
+    }
+
+    async function callApi(path, options) {
+      const res = await fetch(API_BASE + path, options);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.text();
+    }
+
+    async function run(label, fn) {
+      $('output').textContent = label + ' …';
+      try {
+        const text = await fn();
+        $('output').textContent = '✅ ' + label + '\n' + text;
+        return true;
+      } catch (e) {
+        $('output').textContent = '❌ ' + label + '\n' + e.message;
+        return false;
+      }
+    }
+
+    $('btn-ping').onclick = () => run('GET /api/ping', () => callApi('/api/ping'));
+    $('btn-hello').onclick = () => run('GET /api/hello', () => callApi('/api/hello'));
+    $('btn-echo').onclick = () => run('POST /api/echo', () => callApi('/api/echo', {
+      method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: 'hello from renderer'
+    }));
+
+    // 启动自检：ping 后端（域名映射生效则说明链路通）
+    (async () => {
+      setChip('chk-redirect', '域名映射 检测中', true);
+      const ok = await run('链路自检 GET /api/ping（经 app.localhost 重定向）', () => callApi('/api/ping'));
+      setChip('chk-backend', ok ? '后端服务 ✅' : '后端服务 ❌（未启动）', ok);
+      setChip('chk-redirect', ok ? '域名映射 ✅' : '域名映射 ?', ok);
+      $('env').textContent =
+        '运行环境信息：\n' +
+        '  userAgent: ' + navigator.userAgent + '\n' +
+        '  平台: ' + navigator.platform + ' / 内核: ' + (navigator.userAgent.match(/Chrome\/([\d.]+)/) || [])[1] +
+        ' / Electron: ' + (navigator.userAgent.match(/Electron\/([\d.]+)/) || [])[1];
+    })();
+  </script>
+</body>
+</html>
