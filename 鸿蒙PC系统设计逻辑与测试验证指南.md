@@ -345,3 +345,66 @@ hdc shell uname -a                       # 内核信息
 - 沙盒取文件社区讨论：https://bbs.itying.com/topic/67e1b958687c4e0048a856ca
 
 *本文基于官方文档与社区实测整理；`-b` 沙箱访问与 Device File Browser 的可用性取决于应用签名类型与系统版本，请以你的真机实测为准。*
+
+---
+
+# 附录 A：Electron 应用各类数据「写在哪 / 怎么验证」对照清单
+
+> 针对本仓库迁移项目的具体数据类型，给出：写入方式 → 沙箱路径 → 物理路径 → 验证命令。
+> 沙箱内路径以 Electron userData 默认映射为准（= el2/base/files）；后端形态 A（终端启动）数据在用户目录，形态 B（应用内拉起）数据在应用沙箱。
+
+## A.1 前端 Electron（运行在应用沙箱内，✅ 路径官方 README 确认）
+
+| 数据类型 | 写入方式（代码） | 沙箱路径 | 物理路径 | 验证命令（hdc shell -b） |
+|---|---|---|---|---|
+| Electron userData（配置/本地存储/localStorage） | `app.getPath('userData')` | `/data/storage/el2/base/files` | `/data/app/el2/100/base/<pkg>/files` | `hdc shell -b <pkg> ls files` |
+| 前端日志（console 输出） | `console.log/error` | 不进文件，进 hilog | — | `hdc shell hilog -x -e <关键词>` |
+| 渲染层 IndexedDB/缓存 | Chromium 默认 | `el2/base/files/<app>/IndexedDB` 等 | 同上 | `hdc shell -b <pkg> find files -name "*IndexedDB*"` |
+| 下载/导出文件（用户可见） | 写公共目录（需授权） | — | `/storage/Users/currentUser/Download` 等 | 文件管理器直接看；`hdc file recv` 可拉 |
+| Electron 崩溃转储 | `app.getPath('crashDumps')` | `el2/base/files/Crashpad` 等 | 同上 | `hdc shell -b <pkg> ls files` |
+| 前端包内资源（只读） | resfile | `/data/storage/el1/bundle/.../resfile/resources/app` | `/data/app/el1/bundle/public/<pkg>/...` | `hdc shell -b <pkg> ls`（可见 resfile？🟡实测，通常只读） |
+
+## A.2 后端 Java（形态 A：终端启动 = 用户目录；形态 B：应用沙箱）
+
+| 数据类型 | 写入方式 | 形态 A 路径（终端/用户目录） | 形态 B 沙箱路径 | 验证命令 |
+|---|---|---|---|---|
+| 后端日志（logback/log4j） | `logging.file.path` | `<用户目录>/backend/logs/`（终端可见） | `/data/storage/el2/base/files/logs` | A：`hdc file recv`/终端 cat；B：`hdc shell -b <pkg> cat files/logs/xxx.log` |
+| 数据库（H2 等） | JDBC URL 指定 | `<用户目录>/backend/db/` | `/data/storage/el2/base/files/db/`（或 database/） | 同上对应 |
+| 配置文件/证书 | 随 jar 或显式路径 | `<用户目录>/backend/certs/` | `el2/base/files/certs/`（或 resfile 只读拷贝） | 同上 |
+| 打点/运行数据 | 代码写文件 | 用户目录 | 沙箱 files | 同上 |
+| stdout/stderr | 控制台 | 终端可见 | 被 Electron spawn 捕获 → 主进程 console → hilog | `hdc shell hilog -x -e backend` |
+
+## A.3 C++ 工具输出
+
+| 数据类型 | 说明 | 验证 |
+|---|---|---|
+| stdout | spawn 捕获 → Electron 主进程日志 → hilog | `hdc shell hilog -x -e <关键词>` |
+| 输出文件 | 工具自身写文件路径需显式传入沙箱/用户目录路径（HNP 进程无默认工作目录概念） | 按 A.1/A.2 对应路径验证 |
+
+## A.4 测试验证速查（按数据类型）
+
+```bash
+# 1) 先确认进程在跑（形态 B 后端）：
+hdc shell ps -ef | grep java          # 或 grep <pkg>
+
+# 2) 后端日志（形态 B）：
+hdc shell -b com.yourcompany.yourapp cat files/logs/spring.log
+
+# 3) 前端 userData（localStorage 等）：
+hdc shell -b com.yourcompany.yourapp ls files
+
+# 4) 数据库文件：
+hdc shell -b com.yourcompany.yourapp ls files/db
+
+# 5) 形态 A（终端启动）后端日志（用户目录，终端/hdc 可见）：
+hdc shell ls /storage/Users/currentUser/   # 找你的部署目录（🟡 路径以实际用户目录为准）
+
+# 6) 全链路日志一把梭：
+hdc shell hilog -x -e 'backend|renderer|data'
+```
+
+## A.5 工程建议（避免"看不见"的三个约定）
+
+1. **统一日志前缀**：前端 `[renderer]/[main]`、后端 `[backend]`、C++ `[tool]`——hilog 一条命令全过滤（模板已示范）。
+2. **关键数据双通道**：重要运行数据（后端启动参数、数据库路径、端口）启动时打日志 + 诊断页展示（界面可见）。
+3. **测试期固定调试签名**：保证 `hdc shell -b` 与 Device File Browser 可用；上架前再切发布签名做最终验证（发布签名下用诊断页 + hilog 兜底）。

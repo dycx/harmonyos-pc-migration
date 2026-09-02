@@ -3087,6 +3087,7 @@ hdc app install <hap路径>                          # 安装 HAP
 hdc install -r <hap路径>                           # 覆盖安装
 hdc uninstall <bundleName>                        # 卸载
 hdc shell aa start -b <bundleName> -a EntryAbility # 启动应用
+hdc shell aa force-stop <bundleName>              # 强停应用（杀进程）
 hdc shell pm uninstall <bundleName>               # pm 卸载
 hdc shell hilog -x -e <关键字>                     # 日志过滤
 hdc fport tcp:9229 tcp:9229                       # 端口转发（主进程调试）
@@ -3094,6 +3095,27 @@ hdc shell ls /data/app/*/<pkg>_1.0/bin/           # 查看 HNP 释放
 hdc file recv <设备路径> <本地路径>                  # 拉取文件
 hdc file send <本地路径> <设备路径>                  # 推送文件
 ```
+
+### hdc 沙箱访问（★测试验证核心，API 15+，仅调试签名应用）
+```bash
+# 进入应用沙箱数据目录执行命令（非交互，单次）：
+hdc shell -b <bundleName> ls                       # 应用数据目录根
+hdc shell -b <bundleName> ls files                 # userData（el2/base/files）
+hdc shell -b <bundleName> cat files/logs/app.log   # 查看后端/应用日志文件
+hdc shell -b <bundleName> ls database              # 数据库目录
+hdc shell -b <bundleName> ls cache                 # 缓存目录
+
+# API 26+：交互式 shell（默认工作目录=应用数据根）
+hdc shell -b <bundleName>
+
+# 对比：宿主视角（看不到应用沙箱，属正常）
+hdc shell ls /data/app/el2/100/base/<bundleName>   # ❌ permission denied（正常）
+
+# 进程定位（先找 PID，再配合 -b 通道）
+hdc shell ps -ef | grep <bundleName>
+```
+⚠️ 沙箱可见前提：**调试签名**安装（DevEco run 默认）；release 签名包沙箱对调试工具不可见。
+⚠️ `hdc file recv/send` 仅对 `/data/local/tmp` 等 hdc 有权限路径有效；应用沙箱文件用 `-b` 通道或 DevEco Device File Browser。
 
 ### hilog（日志）
 ```bash
