@@ -60,6 +60,11 @@
       font-size: 13px; overflow: auto; min-height: 60px; margin-top: 16px;
     }
     .env { font-size: 13px; opacity: 0.75; margin-top: 24px; line-height: 1.8; text-align: left; }
+    /* 平台能力面板（配合 ipc/process-manage.js 的参考实现） */
+    .pm-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
+    .btn.small { margin-top: 0; padding: 7px 14px; font-size: 13px; }
+    .btn[disabled] { background: #9ca3af; cursor: not-allowed; opacity: .7; }
+    .btn[disabled]::after { content: '（本平台不支持）'; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -94,6 +99,20 @@
     <button class="btn" id="btn-echo" style="background:#7c3aed">POST 回显（/api/echo）</button>
 
     <pre id="output">点击上方按钮，观察后端响应…</pre>
+
+    <!-- ★ 平台与能力面板：演示"能力驱动 UI"——不支持的按钮自动置灰，而不是点了没反应 -->
+    <div class="status-row" style="margin-top:24px">
+      <span class="chip" id="chk-platform">平台 ?</span>
+      <span class="chip" id="chk-rawplatform">process.platform ?</span>
+    </div>
+    <div class="pm-row">
+      <button class="btn small" data-cap="openPath" id="pm-open">打开用户目录</button>
+      <button class="btn small" data-cap="taskbarVisible" id="pm-taskbar">隐藏任务栏图标</button>
+      <button class="btn small" data-cap="flashFrame" id="pm-flash">闪烁窗口</button>
+      <button class="btn small" data-cap="jumpList" id="pm-jump">设置跳转列表</button>
+      <button class="btn small" data-cap="autoStart" id="pm-autostart">开机自启</button>
+    </div>
+    <pre id="pm-output">平台能力面板：点击按钮调用 ipc/process-manage.js 里的 handler…</pre>
 
     <div class="env" id="env"></div>
   </div>
@@ -171,6 +190,59 @@
           : '  ⚠️ file:// 页面的 Origin 为 null，带 Cookie 的跨域/登录请求会被判失败\n' +
             '     解法：main.js 置 CONFIG.USE_APP_SCHEME=true（app:// 协议）或改用 http://app.localhost 加载页面\n' +
             '     详见《鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md》§2.3');
+    })();
+
+    // ============ 平台与能力面板：能力驱动 UI（不支持的按钮置灰，而不是点了没反应） ============
+    (async () => {
+      const api = window.api;   // preload.js 注入（对应 ipc/process-manage.js 的通道）
+      if (!api) {               // 用浏览器直接打开本页时：隐藏整个面板
+        document.querySelectorAll('.pm-row, #pm-output').forEach((el) => { el.style.display = 'none'; });
+        return;
+      }
+
+      const pmOut = (text) => { $('pm-output').textContent = text; };
+
+      // 1) 平台信息
+      try {
+        const info = await api.info();
+        setChip('chk-platform', '平台 ' + info.platform, true);
+        setChip('chk-rawplatform', 'process.platform=' + info.rawPlatform, true);
+        pmOut('平台信息：\n' + JSON.stringify(info, null, 2));
+      } catch (e) {
+        setChip('chk-platform', '平台信息 ❌ ' + e.code, false);
+      }
+
+      // 2) 能力探测 → 置灰不支持的按钮
+      let caps = {};
+      try { caps = await api.capabilities(); } catch (e) { pmOut('能力探测失败：' + e.message); }
+      document.querySelectorAll('[data-cap]').forEach((btn) => {
+        const cap = btn.dataset.cap;
+        if (cap && caps[cap] === false) btn.disabled = true;
+      });
+
+      // 3) 调用：失败（含运行期 E_UNSUPPORTED）→ 立即置灰，避免反复点
+      const actions = {
+        'pm-open': () => api.openPath('.'),
+        'pm-taskbar': () => api.setTaskbarVisible(false),
+        'pm-flash': () => api.flashFrame(true),
+        'pm-jump': () => api.setJumpList(),
+        'pm-autostart': () => api.setAutoStart(true),
+      };
+      Object.entries(actions).forEach(([id, fn]) => {
+        const btn = $(id);
+        if (!btn) return;
+        btn.onclick = async () => {
+          pmOut('调用中… ' + id);
+          try {
+            const data = await fn();
+            pmOut('✅ ' + id + ' 成功\n' + JSON.stringify(data ?? null, null, 2));
+          } catch (e) {
+            // 关键：能力以"运行时结果"为准——接口存在但调用抛错时，这里直接置灰
+            if (e.code === 'E_UNSUPPORTED') btn.disabled = true;
+            pmOut('❌ ' + id + ' 失败 [' + e.code + '] ' + e.message);
+          }
+        };
+      });
     })();
   </script>
 </body>

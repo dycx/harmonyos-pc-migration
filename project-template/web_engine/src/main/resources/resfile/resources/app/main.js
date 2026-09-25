@@ -10,16 +10,33 @@
  *  4. 域名映射：app.localhost → 127.0.0.1:8080（webRequest 重定向 + CORS 头回显）
  *  5. 创建主窗口（★ 无边框 + 自绘标题栏），加载本地 renderer/index.html
  *  6. 首窗口铺满屏幕（maximize / setBounds 兜底）
+ *  7. **装配业务模块**：ipc/process-manage.js 等（本文件只做引导，不放业务逻辑）
  *
  * 配置项见下方 CONFIG 区。
  *
- * ★ 关于"窗口外框"和"跨域登录"两个高频问题，见仓库根：
- *   《鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md》
+ * ★ 本文件只做"引导 + 装配"：窗口三键、系统交互等界面按钮的响应函数全部放在
+ *   ipc/*.js（模块化）与 platform/*.js（平台差异）里，两个平台共用一份代码。
+ *   设计说明见《鸿蒙PC迁移专项_主进程模块化与平台差异适配方案.md》。
+ * ★ 窗口"外框/跨域登录"问题见《鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md》。
  */
-const { app, BrowserWindow, Tray, dialog } = require('electron');
+const { app, BrowserWindow, Tray, dialog, ipcMain } = require('electron');
 const net = require('net');
 const { spawn } = require('child_process');
 const path = require('path');
+
+/* ---------- 模块化骨架（业务代码在 ipc/，平台差异在 platform/） ---------- */
+const log = require('./logger');
+const platform = require('./platform');
+const ipc = require('./ipc/register');
+const registerProcessManage = require('./ipc/process-manage');
+
+/* ---------- 启动自检：三行日志定位"模块没加载/没注册"（详见专项文档 §2.1） ---------- */
+log.info(`boot: platform=${platform.rawPlatform} → ${platform.name} | arch=${process.arch} | electron=${process.versions.electron}`);
+['./ipc/process-manage', './ipc/register', './platform/index', './logger'].forEach((m) => {
+  try { log.info(`boot: resolve ${m} → ${require.resolve(m)}`); }
+  catch (e) { log.error(`boot: module MISSING ${m} (${e.code})：检查打包是否漏文件！`); }
+});
+
 
 /* ============ CONFIG（模板配置区） ============ */
 const CONFIG = {
@@ -119,17 +136,18 @@ function startEmbeddedBackend() {
   return child;
 }
 
-/* ---------- 后端就绪保证 ---------- */
+/* ---------- 后端就绪保证（返回值：true=已就绪，false=未就绪） ---------- */
 async function ensureBackend() {
   if (await probeBackend()) {
     console.log('[backend] already up');
-    return;
+    return true;
   }
   if (CONFIG.USE_EMBEDDED_BACKEND) {
     console.log('[backend] starting embedded JVM...');
     startEmbeddedBackend();
     const ok = await waitBackendReady();
     console.log(ok ? '[backend] ready' : '[backend] NOT ready within timeout');
+    return ok;
   } else {
     // 形态 A：提示用户在终端启动（不 spawn，规避子进程 JIT 限制）
     console.log('[backend] not running (dev mode: start it in terminal)');
@@ -139,9 +157,12 @@ async function ensureBackend() {
       message: '请在鸿蒙 PC 终端中启动后端：\n\n  java -jar <backend>/app.jar\n\n（或将 main.js 的 USE_EMBEDDED_BACKEND 改为 true 自动拉起）',
       buttons: ['我已启动，重试', '稍后再说'],
     });
-    if (response === 0 && !(await probeBackend(3000))) {
-      dialog.showMessageBox({ type: 'warning', message: '仍未检测到后端服务' });
+    if (response === 0) {
+      const ok = await probeBackend(3000);
+      if (!ok) dialog.showMessageBox({ type: 'warning', message: '仍未检测到后端服务' });
+      return ok;
     }
+    return false;
   }
 }
 
@@ -196,16 +217,16 @@ function setupAppSchemeHandler() {
   console.log(`[scheme] ${CONFIG.APP_SCHEME}://bundle/ -> ${root}`);
 }
 
-/* ---------- 自绘标题栏三键（页面 → IPC → 主进程） ---------- */
-function setupWindowControls() {
-  const { ipcMain } = require('electron');
-  ipcMain.on('window:minimize', () => { if (mainWindow) mainWindow.minimize(); });
-  ipcMain.on('window:maximize', () => {
-    if (!mainWindow) return;
-    if (mainWindow.isMaximized()) mainWindow.unmaximize(); else mainWindow.maximize();
+/* ---------- 装配业务模块（窗口三键等界面按钮的响应函数都在 ipc/ 里） ---------- */
+function registerModules() {
+  // ★ 依赖注入：把窗口取值函数传进去，模块内不再 require('./main')，彻底避免循环依赖
+  registerProcessManage({
+    ipcMain,
+    platform,
+    log,
+    getMainWindow: () => mainWindow,
   });
-  ipcMain.on('window:close', () => { if (mainWindow) mainWindow.close(); });
-  ipcMain.handle('window:is-maximized', () => !!(mainWindow && mainWindow.isMaximized()));
+  ipc.dumpRegistered();          // 打印已注册通道清单，与 preload/渲染层对账
 }
 
 /* ---------- 启动尺寸：兜底铺满屏幕 ---------- */
@@ -282,12 +303,16 @@ function createWindow() {
 
 /* ---------- 生命周期 ---------- */
 app.whenReady().then(async () => {
-  createTray();                 // 1. 先建托盘（模板约束）
+  createTray();                 // 1. 先建托盘（模板约束：窗口显隐与托盘强绑定）
   if (CONFIG.USE_APP_SCHEME) setupAppSchemeHandler();
-  setupWindowControls();        // 2. 自绘标题栏三键 IPC
-  await ensureBackend();        // 3. 后端就绪（探测/拉起/提示）
-  setupDomainRedirect();        // 4. 域名映射 + CORS 头
-  createWindow();               // 5. 主窗口（无边框 + 启动铺满）
+  registerModules();            // 2. ★ 先注册 IPC，再建窗口（避免渲染层调用早于注册）
+  setupDomainRedirect();        // 3. 域名映射 + CORS 头
+  createWindow();               // 4. ★ 窗口先出来：避免"等后端"期间没有任何画面
+  // 5. 后端就绪放到窗口之后；就绪后通知渲染层（页面据此淡出等待动画，见《启动闪屏专项》）
+  const backendOk = await ensureBackend();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(ipc.CH.EVT_BACKEND_READY, { ok: backendOk });
+  }
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 

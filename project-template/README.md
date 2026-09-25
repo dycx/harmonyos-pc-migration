@@ -15,10 +15,14 @@ project-template/
 │   └── src/main/
 │       ├── module.json5             # ★权限配置（已精简：6 基础 + JIT）
 │       └── resources/resfile/resources/
-│           ├── app/                 # ★前端产物（main.js + renderer/，模板自带可运行示例）
-│           │   ├── main.js          #   Electron 主进程（探测/拉起后端 + 域名映射 + 托盘）
+│           ├── app/                 # ★前端产物（模板自带可运行示例）
+│           │   ├── main.js          #   主进程入口：只做引导与装配（托盘→注册IPC→建窗→等后端）
+│           │   ├── preload.js       #   安全桥：window.desktop（窗口三键）/ window.api（业务与系统交互）
+│           │   ├── logger.js        #   统一日志前缀 [app][模块]
+│           │   ├── ipc/             #   ★业务模块：channels.js 契约 / register.js 统一注册 / process-manage.js
+│           │   ├── platform/        #   ★平台差异：index.js 归一化+能力探测 / generic / windows / ohos
 │           │   ├── package.json
-│           │   └── renderer/index.html   #   自检页面（调后端接口验证链路）
+│           │   └── renderer/index.html   #   自检页面（链路自检 + 平台能力面板）
 │           └── backend/app.jar      # ★后端 jar（模板自带零依赖 demo，3KB）
 ├── backend-demo/                    # demo 后端源码（零依赖，javac 构建）
 │   ├── src/demo/backend/DemoBackend.java
@@ -29,6 +33,33 @@ project-template/
 ├── build-profile.json5 / hvigor*    # 工程构建配置（SDK 版本注意见下）
 └── 其余官方模板文件（chromium/docs 等，勿删）
 ```
+
+## 主进程模块化骨架（ipc/ + platform/）
+
+**为什么**：把界面按钮/系统交互的响应函数放在独立模块里，迁移到鸿蒙后容易"点了没反应"（打包漏文件、`process.platform` 分支、
+循环 require、注册时机、preload 未生效——五类原因）。模板已按"业务模块 + 平台适配层"重构，**一份代码两端通用**：
+
+| 规则 | 做法 |
+|---|---|
+| 业务模块不碰平台 | `ipc/process-manage.js` 里不出现 `process.platform`，差异全部走 `platform.xxx` |
+| 不做循环 require | 窗口等对象由 `main.js` **注入取值函数**（`getMainWindow: () => mainWindow`） |
+| 通道名不写错 | 主进程/preload/渲染层共用 `ipc/channels.js` 的常量 |
+| 不静默失效 | 统一经 `ipc/register.js` 注册：出入口日志 + `{ok,data／error}` 结构 + 启动打印通道清单 |
+| 不支持的能力要降级 | `platform/*` 抛 `E_UNSUPPORTED` → 渲染层把按钮置灰（见自检页"平台能力面板"） |
+| 平台实现可缺失 | 找不到 `platform/<name>.js` 时自动落到 `platform/generic.js`，应用不会起不来 |
+
+新增一个按钮的完整流程（4 步）：
+`ipc/channels.js` 加常量 → `ipc/process-manage.js` 加一行 `handle(...)` → `preload.js` 暴露方法 → 渲染层调用。
+
+**构建期防复发**（防止某个 .js 没打进包）：
+```bash
+node scripts/check-app-manifest.js <源app目录> project-template/web_engine/src/main/resources/resfile/resources/app
+# 输出：[清单校验] ✅ 一致（退出码 0）；缺文件时逐条列出并退出码 1
+```
+并确保 electron-builder 用 **`asar:false`** + `files: ["**/*.js", ...]` 通配白名单。
+
+> 完整说明（含定位五步法、平台差异速查表、迁移改造步骤）见根目录
+> **《鸿蒙PC迁移专项_主进程模块化与平台差异适配方案.md》**。
 
 ## 三步替换成你的项目
 
