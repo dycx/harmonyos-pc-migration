@@ -72,7 +72,24 @@ VIRTUAL_DOMAIN: 'app.localhost',   // 前端访问域名（webRequest 重定向�
 BACKEND_PORT: 8080,                 // 后端固定端口
 USE_EMBEDDED_BACKEND: false,        // ★后端形态：false=终端启动(开发)；true=应用内拉起(上架，需 JIT 权限)
 EMBEDDED_JAVA: '/data/app/bin/java',// 形态 B 的 JDK 路径（HNP 打包后）
+WINDOW: {
+  frame: false,                     // ★★ 无边框：关掉系统标题栏与窗口边框（"模板窗口成了应用外框"的解法）
+  startMaximized: true,             // ★★ 启动即铺满屏幕（首窗口尺寸另见 electron/src/main/module.json5）
+},
+DEV_DISABLE_WEB_SECURITY: false,    // 仅开发期兜底，上架必须 false（且鸿蒙上未必生效）
+USE_APP_SCHEME: false,              // true=用 app:// 特权协议加载页面，让页面有真实 origin（跨域带 Cookie 前置条件）
 ```
+
+### 窗口形态（鸿蒙 vs Windows 的关键差异）
+- Electron 的 `frame` 在鸿蒙上映射为**系统窗口装饰**：`frame:true` → 系统标题栏 + 窗口边框出现（看起来像"模板窗口成了应用的外框"）。
+  模板已改为 **`frame:false` + 页面自绘标题栏**（拖动区用 `-webkit-app-region: drag`，三键经 `preload.js` → IPC）。
+- **首窗口的启动尺寸由 `electron/src/main/module.json5` 的 `ohos.ability.window.*` 决定**，`new BrowserWindow({width,height})` 对首窗口不生效。
+- 想用系统三键：在 `loadFile/loadURL` 之前调 `win.setWindowButtonVisibility(true)`。
+
+### 跨域 / 登录跳转（重要）
+`webSecurity:false` 只是开发期兜底（官方列为风险参数），且在鸿蒙上未必生效；`file://` 页面的 Origin 是 `null`，**带 Cookie 的跨域/登录请求必然失败**。
+自检页已加 `origin` chip：显示"origin=null ⚠️"就说明还没满足前置条件。完整分场景方案见根目录
+**《鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md》**（含 XHR / 整页跳转 / 弹窗 / 自定义协议回调 / 证书五类场景与三件套解法）。
 
 ### SDK 版本（编译报错先查这里）
 `build-profile.json5` 的 `compatibleSdkVersion` 模板值为 `5.0.3(15)` beta——**改成你 DevEco 安装的 SDK 版本**（如 `6.0.0(20)`），详见仓库根《Electron模板编译错误排查手册.md》。
@@ -90,9 +107,12 @@ hdc app install <签名后的hap>
 ```
 
 ## 链路自检（装好后）
-打开应用 → 首页自动请求 `http://app.localhost/api/ping`（经域名映射 → 127.0.0.1:8080）：
+打开应用 → 首页四个 chip 逐个变绿 + 自动请求 `http://app.localhost/api/ping`（经域名映射 → 127.0.0.1:8080）：
+- `前端页面 ✅` / `页面 origin ✅`（若显示 `origin=null ⚠️`，说明页面还是 `file://`，跨域带 Cookie 必失败）
+- `域名映射 ✅` / `后端服务 ✅`
 - **形态 A（默认）**：需先在鸿蒙终端 `java -jar <backend>/app.jar`（demo jar 拷到用户目录），点按钮验证 /api/hello
 - **形态 B**：改 `USE_EMBEDDED_BACKEND=true` + JDK HNP 打包（见仓库根实施手册 §5）后自动拉起
+- 标题栏为**自绘**（无边框窗口）：按住标题栏可拖动窗口，右侧三键 = 最小化/最大化/关闭（经 `preload.js` → IPC）
 
 ## 版本与来源
 - Electron 34（Chromium 132.0.6834.161 / Node v20.18.1）壳工程（官方模板社区镜像，缺失代码已修复，见仓库根《Electron模板缺失代码修复方案.md》）

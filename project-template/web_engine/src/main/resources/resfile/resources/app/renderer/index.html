@@ -6,11 +6,31 @@
   <title>鸿蒙 PC 项目模板</title>
   <style>
     :root { color-scheme: light dark; }
+    html, body { margin: 0; height: 100%; overflow: hidden; }  /* 无边框窗口：页面必须自己铺满，别留白边 */
     body {
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      margin: 0; padding: 0;
+      box-sizing: border-box; padding-top: 36px;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      min-height: 100vh; background: #f5f7fa; color: #1f2937;
+      background: #f5f7fa; color: #1f2937;
+    }
+    /* ★ 无边框窗口的自绘标题栏：drag 区域负责拖动窗口（与 Windows 版行为一致） */
+    .titlebar {
+      position: fixed; top: 0; left: 0; right: 0; height: 36px; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 0 0 14px; background: #e8ecf3; color: #374151;
+      -webkit-app-region: drag; user-select: none; font-size: 13px;
+    }
+    .titlebar .title { font-weight: 600; }
+    .titlebar .controls { display: flex; -webkit-app-region: no-drag; height: 100%; }
+    .titlebar .controls button {
+      width: 46px; height: 100%; border: none; background: transparent;
+      color: inherit; font-size: 14px; cursor: pointer;
+    }
+    .titlebar .controls button:hover { background: rgba(0,0,0,0.08); }
+    .titlebar .controls button.close:hover { background: #e81123; color: #fff; }
+    @media (prefers-color-scheme: dark) {
+      .titlebar { background: #1f2937; color: #d1d5db; }
+      .titlebar .controls button:hover { background: rgba(255,255,255,0.12); }
     }
     @media (prefers-color-scheme: dark) {
       body { background: #111827; color: #e5e7eb; }
@@ -43,12 +63,23 @@
   </style>
 </head>
 <body>
+  <!-- ★ 无边框窗口的自绘标题栏：拖动区域 = .titlebar（-webkit-app-region: drag），三键 = preload 注入的 window.desktop -->
+  <div class="titlebar">
+    <span class="title">鸿蒙 PC 项目模板</span>
+    <div class="controls">
+      <button id="win-min" title="最小化">─</button>
+      <button id="win-max" title="最大化/还原">□</button>
+      <button id="win-close" class="close" title="关闭">✕</button>
+    </div>
+  </div>
+
   <div class="card">
     <h1>鸿蒙 PC 项目模板</h1>
     <div class="sub">Electron 前端 + Java 后端 · 链路自检页</div>
 
     <div class="status-row">
       <span class="chip" id="chk-frontend">前端页面 ✅</span>
+      <span class="chip" id="chk-origin">页面 origin ?</span>
       <span class="chip" id="chk-redirect">域名映射 ?</span>
       <span class="chip" id="chk-backend">后端服务 ?</span>
     </div>
@@ -106,8 +137,26 @@
       method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: 'hello from renderer'
     }));
 
-    // 启动自检：ping 后端（域名映射生效则说明链路通）
+    // ============ 自绘标题栏三键（无边框窗口，见 main.js CONFIG.WINDOW.frame） ============
+    (() => {
+      const api = window.desktop;   // 由 preload.js 注入（contextIsolation: true）
+      if (!api) {                   // 用浏览器直接打开本页时：隐藏三键
+        const c = document.querySelector('.titlebar .controls');
+        if (c) c.style.display = 'none';
+        return;
+      }
+      $('win-min').onclick = () => api.minimize();
+      $('win-max').onclick = () => api.toggleMaximize();
+      $('win-close').onclick = () => api.close();
+    })();
+
+    // ============ 启动自检：ping 后端（域名映射生效则说明链路通） ============
     (async () => {
+      // ★ origin 自检：file:// 页面的 Origin 是 null，带 Cookie 的跨域/登录请求必然失败
+      const origin = location.origin;
+      const originOk = !(origin === 'null' || origin.startsWith('file:'));
+      setChip('chk-origin', originOk ? '真实 origin ✅' : 'origin=null ⚠️', originOk);
+
       setChip('chk-redirect', '域名映射 检测中', true);
       const ok = await run('链路自检 GET /api/ping（经 app.localhost 重定向）', () => callApi('/api/ping'));
       setChip('chk-backend', ok ? '后端服务 ✅' : '后端服务 ❌（未启动）', ok);
@@ -116,7 +165,12 @@
         '运行环境信息：\n' +
         '  userAgent: ' + navigator.userAgent + '\n' +
         '  平台: ' + navigator.platform + ' / 内核: ' + (navigator.userAgent.match(/Chrome\/([\d.]+)/) || [])[1] +
-        ' / Electron: ' + (navigator.userAgent.match(/Electron\/([\d.]+)/) || [])[1];
+        ' / Electron: ' + (navigator.userAgent.match(/Electron\/([\d.]+)/) || [])[1] + '\n' +
+        '  origin: ' + origin + (originOk
+          ? '（真实 origin：跨域请求可按 Origin 精确放行）'
+          : '  ⚠️ file:// 页面的 Origin 为 null，带 Cookie 的跨域/登录请求会被判失败\n' +
+            '     解法：main.js 置 CONFIG.USE_APP_SCHEME=true（app:// 协议）或改用 http://app.localhost 加载页面\n' +
+            '     详见《鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md》§2.3');
     })();
   </script>
 </body>

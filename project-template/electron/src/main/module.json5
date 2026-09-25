@@ -30,6 +30,28 @@
         "launchType": "specified",
         "removeMissionAfterTerminate": true,
         "exported": true,
+        // ★★ 首窗口启动尺寸（鸿蒙特有）：Electron 里 new BrowserWindow({width,height}) 对
+        //    首个窗口不生效，必须在这里指定；否则窗口按系统默认尺寸打开，看起来"占不满屏幕"。
+        //    运行期还会由 main.js 的 CONFIG.WINDOW.startMaximized 调 maximize() 兜底。
+        //    （官方《Electron鸿蒙化指导文档》→ Electron鸿蒙特性说明 → 窗口 → 首窗口指定大小）
+        "metadata": [
+          {
+            "name": "ohos.ability.window.width",
+            "value": "1280"
+          },
+          {
+            "name": "ohos.ability.window.height",
+            "value": "800"
+          },
+          {
+            "name": "ohos.ability.window.left",
+            "value": "center"
+          },
+          {
+            "name": "ohos.ability.window.top",
+            "value": "center"
+          }
+        ],
         "skills": [
           {
             "entities": [
