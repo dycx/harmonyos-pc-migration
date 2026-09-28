@@ -3,7 +3,7 @@
 > **适用**：Electron 34 鸿蒙壳工程（`templates/ohos_electron_hap-main` / `project-template`）
 > **来源标注**：✅ 官方文档原文核实 ｜ ✅ 模板源码核实（给出文件:行号）｜ ⚠️ 需真机实测（编号对应手册附录 A）
 > **配套改动**：本次已同步修改 `project-template`（清单见 §1.4、§2.4）
-> **版本**：v1.0
+> **版本**：v1.1 —— 修订 §1.2 ③ 与 §1.3：**`maximize()` 不足以消除"鼠标触到屏幕边缘唤出标题栏"**，改用 `setSimpleFullScreen`；并纠正 v1.0 中"模板 `maximize` 走 `ENTER_IMMERSIVE`"的错误表述（源码实为 `EXIT_IMMERSIVE`）
 
 ---
 
@@ -11,7 +11,8 @@
 
 | 问题 | 根因（一句话） | 解法（一句话） |
 |---|---|---|
-| ① 模板窗口成了原应用的"外边框"、占不满屏 | 鸿蒙上 Electron 窗口是 **OHOS 窗口里的一块 XComponent 画面**；应用沿用 `frame:true` → 系统标题栏+窗口边框被打开；且**首窗口尺寸由 `module.json5` metadata 决定，`new BrowserWindow({width,height})` 对首窗口不生效** | `frame:false` + 页面自绘标题栏（`-webkit-app-region: drag`）+ `module.json5` 写首窗口尺寸 + 运行期 `maximize()` |
+| ① 模板窗口成了原应用的"外边框"、占不满屏 | 鸿蒙上 Electron 窗口是 **OHOS 窗口里的一块 XComponent 画面**；应用沿用 `frame:true` → 系统标题栏+窗口边框被打开；且**首窗口尺寸由 `module.json5` metadata 决定，`new BrowserWindow({width,height})` 对首窗口不生效** | `frame:false` + 页面自绘标题栏（`-webkit-app-region: drag`）+ `module.json5` 写首窗口尺寸 + 运行期 **`setSimpleFullScreen(true)`** |
+| ①′ `frame:false` 后**默认没框了，但鼠标移到屏幕上/下边缘，系统标题栏又会滑出来** | 该现象与 `frame` 无关：**只要窗口处于"最大化"状态**，系统就保留了标题栏的自动隐藏/悬停唤出行为。`frame:false` 只影响**初始可见性**，管不住这个系统行为 | 改用 **`win.setSimpleFullScreen(true)`**（原生侧 `maximize(ENTER_IMMERSIVE_DISABLE_TITLE_AND_DOCK_HOVER)`，枚举名即"禁用标题栏/Dock 悬停"）。**`maximize()` 和 `setFullScreen()` 都做不到**——见 §1.3 |
 | ② 跨域/登录跳转在鸿蒙失败 | 多数情况**不是"鸿蒙禁跨域"，而是页面 origin 是 `file://`（Origin=`null`）、或失败点根本不在 CORS（整页跳转不受 CORS 约束）** | 先按 §2.2 场景分型；再用三件套：**真实 origin + 后端 CORS 回显 Origin + 主进程代理** |
 
 > ⚠️ 全局原则：`webSecurity:false` / `--disable-web-security` 只是**开发期兜底**，官方 README 明确列为"风险参数，仅开发/测试，切勿生产"（✅ `research/rawgitcode_electron_readme.md:713`）。上架形态必须走正规方案。
@@ -71,18 +72,44 @@ const win = new BrowserWindow({
 
 > 只有首窗口需要这样写；其它窗口（`new BrowserWindow`）由 Electron 侧尺寸驱动。
 
-### ③ 运行期铺满：`maximize()` / `setBounds()`（官方 API 表均标注"支持"）
+### ③ 运行期铺满：**必须用 `setSimpleFullScreen(true)`**（这一条最容易做错）
+
+> ⚠️ **本节 v1.1 修订**：v1.0 写的"运行期 `maximize()` 兜底"**不够用**——真机实测：`frame:false` 后
+> 系统标题栏**默认确实消失了**，但**鼠标移到屏幕的上/下边缘时标题栏又会滑出来**。
+> v1.0 曾称"模板里 `maximize` 走 `ENTER_IMMERSIVE`"，经核对**源码是 `EXIT_IMMERSIVE`**，原表述有误。
+
+四个 API 的真实差异（✅ 均来自官方文档 + 壳工程源码，非推测）：
+
+| 调用 | 原生侧实现（壳工程源码） | 鼠标触到屏幕上/下边缘 | Dock 栏 |
+|---|---|---|:---:|
+| **`win.setSimpleFullScreen(true)`** | `maximize(ENTER_IMMERSIVE_DISABLE_TITLE_AND_DOCK_HOVER)`<br>✅ `AppWindowAdapter.ets:272-289` | **✅ 不唤出标题栏** | ⚠️ 被遮挡且不随悬停唤出 |
+| `win.setFullScreen(true)` | `maximize(ENTER_IMMERSIVE)`<br>✅ `AppWindowAdapter.ets:254-269` | ❌ 官方差异说明原文：**"鼠标移动到上方/下方会唤出标题栏"** | ⚠️ 被遮挡 |
+| `win.maximize()` | `maximize(EXIT_IMMERSIVE)`<br>✅ `AppWindowAdapter.ets:388-408` | ❌ 进入最大化态，标题栏仍可被唤出 | ✅ 保留 |
+| `win.setBounds({...workArea})` | `windowClass.resize()` | ✅ 通常无该行为（非最大化态） | ✅ 保留 |
+
+**结论：要"彻底没有任何系统外框"，只有 `setSimpleFullScreen` 这一条路。** 枚举名
+`ENTER_IMMERSIVE_DISABLE_TITLE_AND_DOCK_HOVER` 已经把语义写明了：进入沉浸式 **+ 禁用标题栏与 Dock 的悬停**。
+代价是 Dock 被遮挡——**这是系统规格，不是可以绕过的实现细节**；若必须保留 Dock，就退到 `setBounds` 铺满工作区
+（普通窗口，代价是系统认为它不是"最大化"）。
 
 ```js
+// main.js —— 模板已封装为 CONFIG.WINDOW.fullScreenMode，这里给出等价的最小写法
 mainWindow.once('ready-to-show', () => {
   const { screen } = require('electron');
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;   // ✅ screen.getPrimaryDisplay 支持
-  if (CONFIG.WINDOW.startMaximized) win.maximize();                     // ✅ win.maximize 支持
-  else win.setBounds({ x: 0, y: 0, width: Math.min(width, 1280), height: Math.min(height, 800) });
+  if (!CONFIG.WINDOW.startMaximized) {
+    win.setBounds({ x: 0, y: 0, width: Math.min(width, 1280), height: Math.min(height, 800) });
+  } else if (typeof win.setSimpleFullScreen === 'function') {
+    win.setSimpleFullScreen(true);   // ★★ 唯一能禁掉"悬停唤出标题栏"的方式
+  } else {
+    win.maximize();                  // 兜底，并务必打日志（否则就是"改了没效果还查不出原因"）
+  }
 });
 ```
 
-需要真·全屏（无任务栏/沉浸）时用 `win.setFullScreen(true)`（✅ 支持）；注意模板里 `maximize` 走的是 `windowClass.maximize(ENTER_IMMERSIVE)`（✅ `AppWindowAdapter.ets:388-407`）。
+**顺带修正 `frame:false` 的作用边界**（重要认知）：`frame` 控制的是系统装饰的**初始显隐**
+（原生侧 `setUseNativeFrame` → `setWindowDecorVisible`，✅ `AppWindowAdapter.ets:463-472`），
+它**管不住"最大化窗口的标题栏自动隐藏/悬停唤出"**这个独立的系统行为——这正是"看起来解法没生效"的原因。
 
 ### ④ 页面自绘标题栏（无边框后窗口要能拖、能关）
 
@@ -112,8 +139,12 @@ contextBridge.exposeInMainWorld('desktop', {
 
 ```js
 // main.js：三键 IPC
+// ⚠️ 最大化键不要写 mainWindow.isMaximized() ? unmaximize() : maximize()：
+//    ① simple 全屏不是"最大化"态，isMaximized() 恒为 false → 图标与实际状态不一致；
+//    ② 还原后再点最大化会走 maximize()，把刚关掉的"悬停唤出标题栏"又放回来。
+//    模板已收敛到 platform.window.toggleFillScreen()（鸿蒙侧同时认 simple/max/fullscreen 三种态）。
 ipcMain.on('window:minimize', () => mainWindow.minimize());
-ipcMain.on('window:maximize', () => mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize());
+ipcMain.on('window:maximize', () => platform.window.toggleFillScreen(mainWindow));
 ipcMain.on('window:close',    () => mainWindow.close());
 ```
 
@@ -121,6 +152,8 @@ ipcMain.on('window:close',    () => mainWindow.close());
 
 | 追问 | 答案 |
 |---|---|
+| **鼠标移到屏幕边缘，标题栏又出来了？**（★ 实测高频） | 见 §1.2 ③。这不是 `frame:false` 失效，而是**最大化窗口**的系统行为。改 `CONFIG.WINDOW.fullScreenMode = 'simple'`（= `setSimpleFullScreen`）；要保留 Dock 就改 `'bounds'`。**`maximize()` 和 `setFullScreen()` 都解决不了**，别在这两个上耗时间 |
+| `setSimpleFullScreen` 调用后没反应？ | ① 确认是鸿蒙真机（Windows 上该方法无对应实现，模板会自动退化为 `maximize()`）；② 看启动日志 `[window] ... mode=simple applied=setSimpleFullScreen` —— 若出现 `⚠️ 已回退`，说明该鸿蒙构建未暴露此接口；③ 检查是否被后续的 `maximize()`/`setBounds()` 覆盖掉了（三者互斥，别叠加调用） |
 | 无边框后窗口拖不动？ | 用 `-webkit-app-region: drag` 圈出拖动区（✅ 官方示例支持；原生侧对应绑定 `AppWindow.StartWindowMoving`，见 `AppWindowAdapterBind.ets:231`） |
 | 我就是要系统标题栏，只想去掉"框"？ | 做不到二选一：那个"框"就是系统窗口装饰本身。保留系统标题栏 = 保留外框；要应用自己的外观就必须 `frame:false` |
 | 无边框还想有系统三键？ | 在 `loadURL/loadFile` **之前**调 `win.setWindowButtonVisibility(true)`（配合 `win.maximizable` 可单独控最大化键）——✅ 官方 FAQ 给了完整显隐对照表；或按官方 README 改 `WebAbility.ets` 的初始状态 |
@@ -133,7 +166,10 @@ ipcMain.on('window:close',    () => mainWindow.close());
 | 文件 | 改动 |
 |---|---|
 | `project-template/electron/src/main/module.json5` | 补 `ohos.ability.window.*` 首窗口尺寸 metadata |
-| `.../resfile/resources/app/main.js` | `frame:false` + `titleBarStyle` + `startMaximized` + `applyStartupSizing()` + 三键 IPC；preload 接入 |
+| `.../resfile/resources/app/main.js` | `frame:false` + `titleBarStyle` + `startMaximized` + **`fullScreenMode`（默认 `'simple'`）** + `applyStartupSizing()` 走 platform；三键 IPC |
+| `.../resfile/resources/app/platform/generic.js` | **新增** `window.applyStartupSizing / isFillScreen / toggleFillScreen`（跨平台默认实现 + 4 种模式） |
+| `.../resfile/resources/app/platform/ohos.js` | **新增** 上述三者的鸿蒙覆盖：`setSimpleFullScreen` + 接口缺失时的显式回退标记 |
+| `.../resfile/resources/app/ipc/process-manage.js` | 三键改走 `platform.window.*`（业务层不出现平台判断） |
 | `.../resfile/resources/app/preload.js` | **新增**：`window.desktop` 三键桥 |
 | `.../resfile/resources/app/renderer/index.html` | 自绘标题栏（drag 区 + 三键）+ `origin` 自检 chip |
 

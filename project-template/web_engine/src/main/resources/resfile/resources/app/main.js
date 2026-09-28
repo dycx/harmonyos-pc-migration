@@ -9,7 +9,7 @@
  *     - USE_EMBEDDED_BACKEND=false （形态 A：提示用户在终端启动，开发期默认）
  *  4. 域名映射：app.localhost → 127.0.0.1:8080（webRequest 重定向 + CORS 头回显）
  *  5. 创建主窗口（★ 无边框 + 自绘标题栏），加载本地 renderer/index.html
- *  6. 首窗口铺满屏幕（maximize / setBounds 兜底）
+ *  6. 首窗口铺满屏幕（按 CONFIG.WINDOW.fullScreenMode 走 platform.window.applyStartupSizing）
  *  7. **装配业务模块**：ipc/process-manage.js 等（本文件只做引导，不放业务逻辑）
  *
  * 配置项见下方 CONFIG 区。
@@ -65,8 +65,29 @@ const CONFIG = {
     frame: false,
     // ★★ 首窗口铺满屏幕：鸿蒙首窗口的启动尺寸由 electron/src/main/module.json5 的
     //    ohos.ability.window.* 决定，BrowserWindow 的 width/height 对首窗口不生效；
-    //    这里在运行期再调 maximize() 兜底（win.maximize / win.setFullScreen 官方 API 表均标注"支持"）。
+    //    这里在运行期再按 fullScreenMode 铺满兜底。
     startMaximized: true,
+    // ★★ 铺满方式（决定"系统标题栏会不会在鼠标碰到屏幕边缘时滑出来"）：
+    //
+    //   'simple'     win.setSimpleFullScreen(true)  ← 默认，唯一能真正禁掉悬停唤出标题栏的方式
+    //                原生侧：maximize(ENTER_IMMERSIVE_DISABLE_TITLE_AND_DOCK_HOVER)
+    //                ✅ 鼠标触到屏幕上/下边缘不会唤出系统标题栏
+    //                ⚠️ 遮挡 Dock 栏，且 Dock 不再随悬停唤出（官方差异说明）
+    //
+    //   'bounds'     setBounds() 铺满工作区（普通窗口，不进入最大化态）
+    //                ✅ 保留 Dock；通常也不会触发起"最大化窗口"的标题栏自动隐藏/唤出
+    //                ⚠️ 不是真的最大化（系统任务视图里仍是普通窗口）
+    //
+    //   'maximize'   win.maximize()
+    //                ✅ 保留 Dock、真·最大化
+    //                ❌ 鼠标触到屏幕上/下边缘会唤出系统标题栏 ← 用户实测反馈的就是这个现象
+    //
+    //   'fullscreen' win.setFullScreen(true)
+    //                ❌ 官方 API 文档明示："鸿蒙全屏会遮挡Dock栏，鼠标移动到上方/下方会唤出标题栏"
+    //
+    // 结论：要"没有任何系统外框"就用 'simple'；要保留 Dock 就用 'bounds'。
+    // 详见《鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md》§1.3。
+    fullScreenMode: 'simple',
   },
 
   // 开发期兜底：关闭 webSecurity（等价命令行 --disable-web-security）
@@ -229,20 +250,15 @@ function registerModules() {
   ipc.dumpRegistered();          // 打印已注册通道清单，与 preload/渲染层对账
 }
 
-/* ---------- 启动尺寸：兜底铺满屏幕 ---------- */
+/* ---------- 启动尺寸：铺满屏幕（平台差异收敛在 platform/*，本文件不做平台判断） ---------- */
 function applyStartupSizing(win) {
   try {
     const { screen } = require('electron');
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-    console.log(`[window] workArea=${width}x${height} maximized=${win.isMaximized()}`);
-    if (CONFIG.WINDOW.startMaximized) {
-      win.maximize();
-    } else if (width < CONFIG.WINDOW.width || height < CONFIG.WINDOW.height) {
-      win.setBounds({
-        x: 0, y: 0,
-        width: Math.min(width, CONFIG.WINDOW.width),
-        height: Math.min(height, CONFIG.WINDOW.height),
-      });
+    const r = platform.window.applyStartupSizing(win, CONFIG.WINDOW) || {};
+    console.log(`[window] workArea=${width}x${height} mode=${r.mode} applied=${r.applied} fill=${platform.window.isFillScreen(win)}`);
+    if (r.fallback) {
+      console.warn(`[window] ⚠️ 已回退：${r.fallback}（鼠标触到屏幕上/下边缘可能仍会唤出系统标题栏，见专项文档 §1.3）`);
     }
   } catch (e) {
     console.warn('[window] 启动尺寸调整失败:', e.message);

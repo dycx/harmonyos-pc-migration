@@ -66,6 +66,69 @@ module.exports = {
     // 任务栏/窗口特效类能力默认不可用，由 windows.js 覆盖
     setTaskbarVisible() { throw unsupported('win.setSkipTaskbar'); },
     flash() { throw unsupported('win.flashFrame'); },
+
+    /**
+     * 启动时把首窗口铺满屏幕（跨平台默认实现）。
+     *
+     * ⚠️ 鸿蒙上本实现**不足以**消除系统标题栏：窗口处于最大化状态时，鼠标触到屏幕上/下边缘
+     *    系统仍会唤出标题栏（官方 API 文档对 win.setFullScreen 明确标注了该差异）。
+     *    真正禁掉它需要 setSimpleFullScreen —— 见 platform/ohos.js 的覆盖实现，
+     *    原理与实测方法见《鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md》§1.3。
+     *
+     * 支持的模式（CONFIG.WINDOW.fullScreenMode）：
+     *   'simple'     → 本文件退化为 maximize()；鸿蒙上由 ohos.js 覆盖为 setSimpleFullScreen
+     *   'maximize'   → win.maximize()
+     *   'fullscreen' → win.setFullScreen(true)
+     *   'bounds'     → 不进入最大化/全屏状态，仅把窗口铺到工作区大小（保留任务栏/Dock）
+     *
+     * @param {BrowserWindow} win
+     * @param {object} opts CONFIG.WINDOW
+     * @returns {{mode: string, applied: string}} 实际采用的方式（供日志核对，避免"静默失效"）
+     */
+    applyStartupSizing(win, opts = {}) {
+      if (!win || win.isDestroyed()) return { mode: opts.fullScreenMode || 'maximize', applied: 'no-window' };
+      const { screen } = require('electron');
+      const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
+      if (!opts.startMaximized) {
+        if (width < opts.width || height < opts.height) {
+          win.setBounds({
+            x: 0, y: 0,
+            width: Math.min(width, opts.width),
+            height: Math.min(height, opts.height),
+          });
+          return { mode: 'none', applied: 'setBounds(fit)' };
+        }
+        return { mode: 'none', applied: 'none(already fits)' };
+      }
+
+      switch (opts.fullScreenMode) {
+        case 'fullscreen':
+          if (!hasFn(win, 'setFullScreen')) throw unsupported('win.setFullScreen');
+          win.setFullScreen(true);
+          return { mode: 'fullscreen', applied: 'setFullScreen' };
+        case 'bounds':
+          // 普通窗口铺满工作区：不触发"最大化窗口"的系统行为（标题栏自动隐藏/唤出）
+          win.setBounds({ x: 0, y: 0, width, height });
+          return { mode: 'bounds', applied: 'setBounds(workArea)' };
+        case 'simple':
+        case 'maximize':
+        default:
+          win.maximize();
+          return { mode: opts.fullScreenMode || 'maximize', applied: 'maximize' };
+      }
+    },
+
+    /** 当前是否处于"铺满"状态（自绘三键据此切换图标） */
+    isFillScreen(win) {
+      return !!(win && !win.isDestroyed() && win.isMaximized());
+    },
+
+    /** 切换"铺满 / 还原" */
+    toggleFillScreen(win) {
+      if (!win || win.isDestroyed()) return;
+      if (win.isMaximized()) win.unmaximize(); else win.maximize();
+    },
   },
 
   app: {

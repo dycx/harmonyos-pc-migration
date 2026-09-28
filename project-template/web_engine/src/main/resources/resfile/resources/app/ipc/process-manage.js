@@ -27,13 +27,11 @@ module.exports = function register(ctx) {
 
   /* ---------- 窗口三键（自绘标题栏用；无边框窗口的必需能力） ---------- */
   on(ipcMain, CH.WIN_MINIMIZE, () => getMainWindow()?.minimize());
-  on(ipcMain, CH.WIN_MAXIMIZE, () => {
-    const win = getMainWindow();
-    if (!win) return;
-    if (win.isMaximized()) win.unmaximize(); else win.maximize();
-  });
+  // 铺满/还原走 platform：鸿蒙上是 setSimpleFullScreen（否则系统标题栏会在鼠标触到
+  // 屏幕上/下边缘时滑出来），Windows 上就是普通的 maximize/unmaximize。
+  on(ipcMain, CH.WIN_MAXIMIZE, () => platform.window.toggleFillScreen(getMainWindow()));
   on(ipcMain, CH.WIN_CLOSE, () => getMainWindow()?.close());
-  handle(ipcMain, CH.WIN_IS_MAXIMIZED, () => !!(getMainWindow() && getMainWindow().isMaximized()));
+  handle(ipcMain, CH.WIN_IS_MAXIMIZED, () => platform.window.isFillScreen(getMainWindow()));
 
   /* ---------- 平台 / 能力信息 ---------- */
   handle(ipcMain, CH.APP_INFO, () => platform.system.info());

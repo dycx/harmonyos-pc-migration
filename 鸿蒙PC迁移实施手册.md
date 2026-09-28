@@ -3300,11 +3300,11 @@ hap-sign-tool sign-app -keyAlias <别名> -signAlg SHA256withECDSA \
 
 | 文档 | 覆盖内容 | 对应实测项 |
 |---|---|---|
-| `鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md` | 窗口"外框/占不满屏"（`frame`→系统装饰映射、首窗口尺寸 metadata、自绘标题栏 + `-webkit-app-region: drag`）；跨域与登录跳转五类场景分型（XHR / 整页跳转 / 弹窗 / 自定义协议回调 / 证书）+ 真实 origin、后端 CORS、主进程代理三件套；`ACAO:*` 与 credentials 互斥的坑 | A-30~A-36 |
+| `鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md` | 窗口"外框/占不满屏"（`frame`→系统装饰映射、首窗口尺寸 metadata、自绘标题栏 + `-webkit-app-region: drag`）；**★"鼠标触到屏幕上/下边缘系统标题栏仍被唤出"的根因与唯一解法 `setSimpleFullScreen`（`frame:false`/`maximize()`/`setFullScreen()` 均无效），四种铺满方式对照表**；跨域与登录跳转五类场景分型（XHR / 整页跳转 / 弹窗 / 自定义协议回调 / 证书）+ 真实 origin、后端 CORS、主进程代理三件套；`ACAO:*` 与 credentials 互斥的坑 | A-30~A-36 |
 | `鸿蒙PC迁移专项_启动闪屏定位与解决方案.md` | 启动闪屏（等待动画）不显示：三步定位法（静态自查 7 关键字 / 日志判读 / 最小化复现 V1-V5）+ 6 类最可能问题（托盘顺序、首窗口 close、`show:false`、`transparent`/`skipTaskbar`、空窗期、系统启动窗口）+ 三层接力方案与页面覆盖层代码 + 反模式清单 | A-42~A-44 |
 | `鸿蒙PC迁移专项_多语言i18n方案.md` | 多语言：官方 locale API 支持矩阵与端口实现来源（`app.getLocale` ← OHOS `Intl`）、运行期无语言变化事件的约束、"首次跟随系统 + 应用内可覆盖"分层方案与代码、ArkTS 资源多语言配置清单 | A-37~A-41 |
 | `鸿蒙PC迁移专项_主进程模块化与平台差异适配方案.md`（可独立阅读） | 主进程独立模块迁移后失效的 5 类根因（打包漏文件 / `process.platform` 分支 / 循环依赖 / 注册时机 / preload）与 30 秒验证法；目标架构（业务模块 + `platform/` 适配层 + 通道契约 + 能力探测 + 统一包装）；逐文件参考实现；迁移改造 6 步；构建期清单校验；平台差异速查表 | A-45~A-48 |
-| `project-template/`（配套代码） | 上述改动已落到模板：`main.js`（`frame:false`/`startMaximized`/CORS 头回显/模块装配）、`preload.js`（契约化）、`renderer/index.html`（自绘标题栏 + origin 自检 + 平台能力面板）、`ipc/`（channels/register/process-manage）、`platform/`（index/generic/windows/ohos）、`logger.js`、`electron/src/main/module.json5`（首窗口尺寸）、`scripts/check-app-manifest.js`（构建期清单校验） | — |
+| `project-template/`（配套代码） | 上述改动已落到模板：`main.js`（`frame:false`/`startMaximized`/**`fullScreenMode`，默认 `'simple'` = setSimpleFullScreen**/CORS 头回显/模块装配）、`preload.js`（契约化）、`renderer/index.html`（自绘标题栏 + origin 自检 + 平台能力面板）、`ipc/`（channels/register/process-manage）、`platform/`（index/generic/windows/ohos，窗口铺满的平台差异在 `generic.js`/`ohos.js`）、`logger.js`、`electron/src/main/module.json5`（首窗口尺寸）、`scripts/check-app-manifest.js`（构建期清单校验） | — |
 
 ---
 

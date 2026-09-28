@@ -106,6 +106,9 @@ EMBEDDED_JAVA: '/data/app/bin/java',// 形态 B 的 JDK 路径（HNP 打包后�
 WINDOW: {
   frame: false,                     // ★★ 无边框：关掉系统标题栏与窗口边框（"模板窗口成了应用外框"的解法）
   startMaximized: true,             // ★★ 启动即铺满屏幕（首窗口尺寸另见 electron/src/main/module.json5）
+  fullScreenMode: 'simple',         // ★★ 铺满方式：'simple'=setSimpleFullScreen（唯一能禁掉"鼠标触到屏幕
+                                    //    上/下边缘唤出系统标题栏"的方式，代价是遮挡 Dock）；
+                                    //    'bounds'=普通窗口铺满工作区（保留 Dock）；'maximize'/'fullscreen' 会复现悬停标题栏
 },
 DEV_DISABLE_WEB_SECURITY: false,    // 仅开发期兜底，上架必须 false（且鸿蒙上未必生效）
 USE_APP_SCHEME: false,              // true=用 app:// 特权协议加载页面，让页面有真实 origin（跨域带 Cookie 前置条件）
@@ -114,6 +117,12 @@ USE_APP_SCHEME: false,              // true=用 app:// 特权协议加载页面�
 ### 窗口形态（鸿蒙 vs Windows 的关键差异）
 - Electron 的 `frame` 在鸿蒙上映射为**系统窗口装饰**：`frame:true` → 系统标题栏 + 窗口边框出现（看起来像"模板窗口成了应用的外框"）。
   模板已改为 **`frame:false` + 页面自绘标题栏**（拖动区用 `-webkit-app-region: drag`，三键经 `preload.js` → IPC）。
+- **`frame:false` 只管"初始显隐"**：真机实测，窗口处于最大化态时，**鼠标移到屏幕的上/下边缘，系统标题栏仍会滑出来**。
+  这属于系统窗口行为，`frame:false` 管不住，`maximize()` / `setFullScreen()` 也都去不掉。
+  → 解法是 **`win.setSimpleFullScreen(true)`**（`fullScreenMode:'simple'`，原生侧 `ENTER_IMMERSIVE_DISABLE_TITLE_AND_DOCK_HOVER`，枚举名即"禁用标题栏/Dock 悬停"），代价是遮挡 Dock；
+  要保留 Dock 就用 `fullScreenMode:'bounds'`。详见《鸿蒙PC迁移专项_窗口全屏与跨域登录方案.md》§1.2 ③。
+- 平台差异全部收敛在 `app/platform/*`：`generic.js` 是跨平台默认实现，`ohos.js` 覆盖鸿蒙专有行为，
+  `ipc/*.js` 业务代码里**不出现任何平台判断**（这是模板的硬约束）。
 - **首窗口的启动尺寸由 `electron/src/main/module.json5` 的 `ohos.ability.window.*` 决定**，`new BrowserWindow({width,height})` 对首窗口不生效。
 - 想用系统三键：在 `loadFile/loadURL` 之前调 `win.setWindowButtonVisibility(true)`。
 
