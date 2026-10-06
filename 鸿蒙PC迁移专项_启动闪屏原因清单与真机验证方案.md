@@ -608,18 +608,31 @@ OnWindowStatusChange        OnWindowVisibilityChange
 
 ### 方案 0：视觉对齐（零代码风险，必做）
 
+> ✅ **已实装到 `project-template`**（本次）。实现形式：`renderer/index.html` 的 `:root` 里定义 CSS 变量
+> `--startup-bg: #ffffff`，并在 ①②③ 三处都加了互相指引的注释。三处当前均为纯白，已核验一致。
+
 **目标**：让 ①→②→④ 三段的底色**完全一致**，使"无动画期"不被察觉。
 
-| 改动 | 位置 | 动作 |
-|---|---|---|
-| 启动窗口底色 | `electron/src/main/resources/base/element/color.json` | `start_window_background` → 改成与你应用底色一致的值（当前 `#FFFFFF`，与页面 `#f5f7fa` 不一致） |
-| 启动窗口图标 | `AppScope/resources/base/media/startIcon.png` | 换成应用自己的 logo（当前是 1024×1024 的壳工程图标） |
-| ArkTS 页初始底色 | `electron/src/main/ets/pages/Index.ets` | `initStyle.backgroundColor` 当前 `'ffffffff'`（白）→ 与上面统一 |
-| 页面底色 | renderer 的 HTML | 与上面统一 |
+**⚠️ 按 §2.2 的结论，对齐目标是"白色"**（冷启动走 `module.json5` 的 `start_window_background = #FFFFFF`）。
+因此**只需保证下面三处一致**（页面自身的 `#f5f7fa` 属于"淡出之后"的观感，与启动瞬间无关）：
+
+| # | 改动 | 位置 | 动作 |
+|---|---|---|---|
+| ① | 系统启动窗口底色 | `electron/src/main/resources/base/element/color.json` | `start_window_background`（当前 `#FFFFFF`） |
+| ② | ArkTS 页初始底色 | `electron/src/main/ets/pages/Index.ets` | `initStyle.backgroundColor`（当前 `'ffffffff'` = 白，ARGB 无 `#` 前缀） |
+| ③ | **覆盖层底色** | `app/renderer/index.html` 的 `--startup-bg` | 与 ①② 一致（当前 `#ffffff`） |
+| ④ | 启动窗口图标（可选） | `AppScope/resources/base/media/startIcon.png` | 换成应用自己的 logo（当前是壳工程的 1024×1024 图标） |
+
+> ⚠️ **只对冷启动有效**：`module.json5` 的这两个字段**只作用于启动器冷启动那一次**；
+> Electron 之后新建的窗口走 §2.2 那条"空白图 + 全透明"路径，改这里对它们无效。
 
 **副产品**：即使不修动画，观感也会从"白闪 + 突变"变成"平滑接力"。
 
 ### 方案 1：页面覆盖层（★ 推荐，Windows/鸿蒙行为一致）
+
+> ✅ **已实装到 `project-template`**（本次）。落点：`app/renderer/index.html` 的 `#splash`
+> （内联 SVG 圆环 + CSS `@keyframes` 动画），控制逻辑在同一文件的"启动等待覆盖层的显隐控制"脚本块。
+> §7 用例 V3/V7 可直接用来验证它。
 
 **覆盖范围**：阶段 ④ → ⑤（Electron 首帧 → 业务就绪）。
 **不需要任何跨边界信号**（这是它相对方案 2 的决定性优势，理由见 §3.6）。
@@ -633,13 +646,26 @@ OnWindowStatusChange        OnWindowVisibilityChange
 | channels.js | 已就绪 ✅ —— `EVT_BACKEND_READY: 'backend:ready'`（`:31`） |
 | **renderer 页面** | ❌ **待补** —— 需要加覆盖层 DOM + CSS 动画 + 订阅 `onBackendReady` 后淡出 |
 
-**落地注意点（本次补充，原专项未提）**：
+**落地注意点（本次实装后修订，与原专项的建议有一处不同）**：
 
-1. **覆盖层必须放在自绘标题栏之下**：本工程 body 有 `padding-top: 36px` 与 `.titlebar { position: fixed; z-index: 10 }`，覆盖层若用 `z-index` 低于 10 会被标题栏压住；建议覆盖层 `z-index: 9999` 且 `inset: 0`，**连标题栏一起盖住**（启动期间不该允许拖窗/关窗）。
+1. **★ 覆盖层不要盖住自绘标题栏 → 用 `top: 36px`，而不是 `inset: 0`**（**此处修正本文 v1.0 的建议**）。
+   原建议是"连标题栏一起盖住，启动期间不该允许拖窗/关窗"。但实装后发现问题：**后端一直不就绪时要等到 90s 硬超时才解除遮挡，用户在这段时间内连窗口都关不掉**——这是不可接受的。
+   正确做法：覆盖层从标题栏下方开始（`position: fixed; left:0; right:0; top:36px; bottom:0; z-index:9999`），
+   与 `body` 的 `padding-top: 36px` 对齐。等待期间标题栏仍可拖动/最小化/关闭。
 2. **淡出后必须 `pointer-events: none`**，否则会挡住下面的自检按钮（原专项代码已含，务必保留）。
 3. **后端失败时不要留白**：`onBackendReady({ok:false})` 时要给出提示（否则用户面对一个永远不消失的转圈）。
-4. **动画用纯 CSS/SVG**（`@keyframes`），不要用 `setInterval`（原因见 C1）。
-5. **首帧一致性**：覆盖层底色应与方案 0 统一后的颜色相同，否则阶段 ③→④ 仍有一次突变。
+4. **动画用纯 CSS/SVG**（`@keyframes`），不要用 `setInterval` 驱动动画（原因见 C1）。
+   注意区分：**轮询后端状态**可以用 `setInterval`（那不是动画，晚一点无妨）；**动画本身**必须交给 CSS。
+5. **首帧一致性**：覆盖层底色应与方案 0 统一后的颜色相同，否则阶段 ②→④ 仍有一次突变。
+6. **★ 必须有"事件丢失"兜底**（实装时新增，本文 v1.0 未提）：
+   主进程是 `createWindow()` → `await ensureBackend()` → `webContents.send(EVT_BACKEND_READY)`。
+   若后端**本来就在跑**，`probeBackend()` 几乎立刻返回，**事件可能在页面脚本注册监听之前就发出而丢失**。
+   → 因此不能只依赖事件：需再加"页面自己轮询 `/api/ping`"作为兜底（实装里 1.2s 一次，最多 75 次）。
+7. **★ 必须有硬超时兜底**：主进程异常、后端永不来、事件又丢了 —— 任何一种都不该让用户永久停在转圈。
+   实装为 90s 后强制淡出并显示"启动超时"提示。
+8. **★ 不要引入外部图片资源**：覆盖层的 logo/图标用**内联 SVG** 画。
+   原专项示例里的 `<img src="logo.png">` 有真实风险——`check-app-manifest.js` 的 REQUIRED 清单与 electron-builder 的
+   `files` 白名单都只覆盖 `.js`，新增图片很容易"没打进包"，从而变成又一个静默失效（见《主进程模块化专项》§构建期防复发）。
 
 ### 方案 2：ArkTS 层闪屏（能覆盖最早的 ②–③，但有前置缺口）
 

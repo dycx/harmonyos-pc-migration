@@ -22,7 +22,7 @@ project-template/
 │           │   ├── ipc/             #   ★业务模块：channels.js 契约 / register.js 统一注册 / process-manage.js
 │           │   ├── platform/        #   ★平台差异：index.js 归一化+能力探测 / generic / windows / ohos
 │           │   ├── package.json
-│           │   └── renderer/index.html   #   自检页面（链路自检 + 平台能力面板）
+│           │   └── renderer/index.html   #   自检页面（★启动等待覆盖层 + 链路自检 + 平台能力面板）
 │           └── backend/app.jar      # ★后端 jar（模板自带零依赖 demo，3KB）
 ├── backend-demo/                    # demo 后端源码（零依赖，javac 构建）
 │   ├── src/demo/backend/DemoBackend.java
@@ -125,6 +125,32 @@ USE_APP_SCHEME: false,              // true=用 app:// 特权协议加载页面�
   `ipc/*.js` 业务代码里**不出现任何平台判断**（这是模板的硬约束）。
 - **首窗口的启动尺寸由 `electron/src/main/module.json5` 的 `ohos.ability.window.*` 决定**，`new BrowserWindow({width,height})` 对首窗口不生效。
 - 想用系统三键：在 `loadFile/loadURL` 之前调 `win.setWindowButtonVisibility(true)`。
+
+### 启动等待动画（闪屏）★ 已实装
+Windows 上"居中圆形图标 + 圆周进度"的启动动画，在鸿蒙上**不能照搬**：窗口可见性在创建那一刻就被
+`StartOptions.startupVisibility` 定死，且窗口显隐与托盘强绑定，"独立闪屏窗口 + 结束 close()"会踩
+`terminateSelf`（首窗口 = 入口 Ability）。**模板改为把等待动画做在主窗口页面里**（页面覆盖层），
+不依赖托盘 / `show()` / 透明，两端行为一致：
+
+| 环节 | 落点 |
+|---|---|
+| 覆盖层 DOM + CSS/SVG 动画 | `app/renderer/index.html` 的 `#splash`（纯内联 SVG，**不引外部图片**，避免漏打包） |
+| 淡出触发 | ① 主进程 `EVT_BACKEND_READY` → `preload.js` 的 `onBackendReady`（正常路径）<br>② 页面自己轮询 `/api/ping`（兜底：事件可能早于脚本注册而丢失）<br>③ 90s 硬超时（兜底：后端始终不来，不会永久卡在转圈） |
+| 主进程侧（已就绪） | `main.js:326` 先 `createWindow()` 再 `await ensureBackend()`，就绪后发 `EVT_BACKEND_READY` |
+
+**★ 方案 0「视觉对齐」——三处启动期底色必须一致**，否则启动瞬间会颜色跳变：
+
+| # | 位置 | 当前值 |
+|---|---|---|
+| ① | `electron/src/main/resources/base/element/color.json` → `start_window_background` | `#FFFFFF` |
+| ② | `electron/src/main/ets/pages/Index.ets` → `initStyle.backgroundColor`（ARGB，无 `#`） | `ffffffff` |
+| ③ | `app/renderer/index.html` → CSS 变量 `--startup-bg` | `#ffffff` |
+
+**改就三处一起改**（三处均已加注释互相指引）。
+
+> 覆盖层刻意**不盖住自绘标题栏**（`top: 36px`）——等待期间仍能拖动/最小化/关闭窗口。
+> 完整原因清单（18 条）、真机验证用例（V0–V12）与其余方案见
+> 《鸿蒙PC迁移专项_启动闪屏原因清单与真机验证方案.md》。
 
 ### 跨域 / 登录跳转（重要）
 `webSecurity:false` 只是开发期兜底（官方列为风险参数），且在鸿蒙上未必生效；`file://` 页面的 Origin 是 `null`，**带 Cookie 的跨域/登录请求必然失败**。

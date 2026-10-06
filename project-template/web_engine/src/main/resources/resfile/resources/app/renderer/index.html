@@ -5,7 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>鸿蒙 PC 项目模板</title>
   <style>
-    :root { color-scheme: light dark; }
+    :root {
+      color-scheme: light dark;
+      /* ★★ 启动期统一底色（方案 0「视觉对齐」，详见启动闪屏专项文档 §6 方案 0）
+       *    鸿蒙冷启动时屏幕先由"系统启动窗口"接管，再交给本页；这三处颜色不一致就会出现颜色跳变：
+       *      ① electron/src/main/resources/base/element/color.json → start_window_background
+       *      ② electron/src/main/ets/pages/Index.ets → initStyle.backgroundColor（ARGB，无 # 前缀）
+       *      ③ 本文件的 #splash 覆盖层背景（= 下面的变量）
+       *    当前值：① "#FFFFFF"  ② "ffffffff"  ③ var(--startup-bg) —— 三处均为纯白，改就一起改。
+       */
+      --startup-bg: #ffffff;
+    }
     html, body { margin: 0; height: 100%; overflow: hidden; }  /* 无边框窗口：页面必须自己铺满，别留白边 */
     body {
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -65,9 +75,63 @@
     .btn.small { margin-top: 0; padding: 7px 14px; font-size: 13px; }
     .btn[disabled] { background: #9ca3af; cursor: not-allowed; opacity: .7; }
     .btn[disabled]::after { content: '（本平台不支持）'; font-size: 11px; }
+
+    /* ============ 启动等待覆盖层（闪屏）============
+     * 为什么做在页面里、而不是独立闪屏窗口：
+     *   鸿蒙上窗口可见性在"创建那一刻"就被 StartOptions.startupVisibility 定死，且窗口显隐与托盘强绑定；
+     *   "先建闪屏窗口、结束再 close()"会踩 terminateSelf（首窗口 = 入口 Ability）。
+     *   页面覆盖层不依赖托盘 / show() / 透明，Windows 与鸿蒙行为一致。
+     *   详见《鸿蒙PC迁移专项_启动闪屏原因清单与真机验证方案.md》§6 方案 1。
+     * 为什么全用内联 SVG + CSS 动画、不引外部图片：
+     *   ① 不新增需要额外打包的资源文件，避免"文件没打进包"导致的静默失效；
+     *   ② 纯 CSS 动画首帧即可绘制，不依赖 JS 定时器或框架挂载。
+     */
+    #splash {
+      /* ★ 刻意不盖住自绘标题栏（它 z-index:10、高 36px）：等待期间仍能拖动/最小化/关闭窗口，
+         否则后端一直不就绪时用户连窗口都关不掉（body 的 padding-top 同为 36px，视觉对齐） */
+      position: fixed; left: 0; right: 0; top: 36px; bottom: 0; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+      background: var(--startup-bg);
+      transition: opacity .35s ease;
+    }
+    #splash.hide { opacity: 0; pointer-events: none; }   /* ★ 淡出后必须不挡鼠标，否则下面按钮点不动 */
+    #splash .ring-wrap { position: relative; width: 120px; height: 120px; }
+    #splash svg { display: block; }
+    #splash .track { stroke: #e5e7eb; }
+    #splash .arc {
+      stroke: #2563eb; stroke-linecap: round;
+      stroke-dasharray: 326.7;        /* 2πr，r = 52 */
+      stroke-dashoffset: 326.7;
+      transform: rotate(-90deg);      /* 起点从 12 点开始 */
+      transform-origin: 50% 50%;
+      animation: ring-turn 1.2s linear infinite;
+    }
+    @keyframes ring-turn { to { stroke-dashoffset: 0; } }   /* 顺时针转满一圈 */
+    #splash .mark { position: absolute; inset: 0; margin: auto; width: 48px; height: 48px; }
+    #splash .tip { font-size: 14px; color: #6b7280; text-align: center; padding: 0 24px; }
+    #splash .tip.fail { color: #b91c1c; }
   </style>
 </head>
 <body>
+  <!-- ★ 启动等待覆盖层（闪屏）：Electron 首帧即显示，收到 backend:ready 后淡出。
+       内容全部为内联 SVG/CSS，不依赖任何外部图片资源。控制逻辑见文件末尾的同名脚本块。 -->
+  <div id="splash">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+        <circle class="track" cx="60" cy="60" r="52" fill="none" stroke-width="6"/>
+        <circle class="arc" cx="60" cy="60" r="52" fill="none" stroke-width="6"/>
+      </svg>
+      <!-- 居中标记：纯 SVG 画的 < > 双箭头，避免引入外部 logo 图片 -->
+      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M18 10 L8 24 L18 38" fill="none" stroke="#2563eb" stroke-width="4"
+              stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M30 10 L40 24 L30 38" fill="none" stroke="#2563eb" stroke-width="4"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="tip" id="splash-tip">正在启动后台服务…</div>
+  </div>
+
   <!-- ★ 无边框窗口的自绘标题栏：拖动区域 = .titlebar（-webkit-app-region: drag），三键 = preload 注入的 window.desktop -->
   <div class="titlebar">
     <span class="title">鸿蒙 PC 项目模板</span>
@@ -137,6 +201,56 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return await res.text();
     }
+
+    // ============ 启动等待覆盖层的显隐控制 ============
+    // 三条路径任一满足即淡出（hideSplash 幂等），确保"既不会卡在转圈，也不会闪一下就没了"：
+    //   ① 主进程事件 backend:ready —— 正常路径（main.js 的 ensureBackend 结束后发送）
+    //   ② 自己轮询 /api/ping 成功 —— 兜底①：事件可能在脚本注册监听之前就已发出而丢失
+    //   ③ 硬超时 —— 兜底②：主进程异常或后端始终不来，不能让用户永远停在等待画面
+    (() => {
+      const splash = $('splash');
+      const tip = $('splash-tip');
+      if (!splash) return;
+
+      let done = false;
+      function hideSplash(text, isFail) {
+        if (done) return;
+        done = true;
+        if (text) {
+          tip.textContent = text;
+          if (isFail) tip.classList.add('fail');
+        }
+        // 有提示文案时多停一会儿让用户看清，再淡出
+        setTimeout(() => splash.classList.add('hide'), text ? 1200 : 0);
+      }
+
+      // ① 主进程事件（正常路径）
+      const api = window.api;   // preload.js 注入
+      if (!api || typeof api.onBackendReady !== 'function') {
+        // 用浏览器直接打开本页（无 preload）：别让覆盖层挡住自检页
+        hideSplash('', false);
+        return;
+      }
+      api.onBackendReady(({ ok }) => {
+        hideSplash(ok ? '' : '后端服务未就绪，请按提示在终端启动后重试', !ok);
+      });
+
+      // ② 轮询兜底（75 × 1.2s ≈ 90s）
+      let tries = 0;
+      const timer = setInterval(async () => {
+        if (done || ++tries > 75) { clearInterval(timer); return; }
+        try {
+          const res = await fetch(API_BASE + '/api/ping');
+          if (res.ok) { clearInterval(timer); hideSplash('', false); }
+        } catch (_) { /* 后端还没起来，继续等 */ }
+      }, 1200);
+
+      // ③ 硬超时兜底
+      setTimeout(() => {
+        clearInterval(timer);
+        hideSplash('启动超时：后端服务仍未就绪（详见终端输出与 hilog）', true);
+      }, 90000);
+    })();
 
     async function run(label, fn) {
       $('output').textContent = label + ' …';
