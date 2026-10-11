@@ -103,6 +103,10 @@ VIRTUAL_DOMAIN: 'app.localhost',   // 前端访问域名（webRequest 重定向�
 BACKEND_PORT: 8080,                 // 后端固定端口
 USE_EMBEDDED_BACKEND: false,        // ★后端形态：false=终端启动(开发)；true=应用内拉起(上架，需 JIT 权限)
 EMBEDDED_JAVA: '/data/app/bin/java',// 形态 B 的 JDK 路径（HNP 打包后）
+JVM_ARGS: [                         // ★★ 形态 B 已默认注入 JNI 库搜索路径，见下节「Java 后端的 JNI 原生库」
+  '-Xmx256m',
+  '-Djava.library.path=/data/storage/el1/bundle/libs/arm64',
+],
 WINDOW: {
   frame: false,                     // ★★ 无边框：关掉系统标题栏与窗口边框（"模板窗口成了应用外框"的解法）
   startMaximized: true,             // ★★ 启动即铺满屏幕（首窗口尺寸另见 electron/src/main/module.json5）
@@ -113,6 +117,41 @@ WINDOW: {
 DEV_DISABLE_WEB_SECURITY: false,    // 仅开发期兜底，上架必须 false（且鸿蒙上未必生效）
 USE_APP_SCHEME: false,              // true=用 app:// 特权协议加载页面，让页面有真实 origin（跨域带 Cookie 前置条件）
 ```
+
+### Java 后端的 JNI 原生库（zstd-jni / snappy-java / lz4-java…）★ 形态 B 必读
+
+**症状**：后端启动或首次用到压缩时报 `UnsatisfiedLinkError`，提示 `libzstd-jni`（或别的 native 库）无法加载。
+
+**根因（两条叠加，缺一不可）**：
+
+| # | 问题 | 说明 |
+|---|---|---|
+| 1 | **libc 不同源** | Maven 上的 `zstd-jni` 等库内置的 `.so` 是 **glibc** 编译的（`DT_NEEDED` = `libc.so.6`/`libpthread.so.0`），而鸿蒙是 **musl**（提供 `libc.so`）。**必须用 OHOS 工具链重新交叉编译**，拿现成的 glibc 产物必挂 |
+| 2 | **XPM 会拦 dlopen** | 鸿蒙 XPM 内核管控 hook 的是 `mmap_region`/`file_mprotect`，判定只看"文件映射 + `PROT_EXEC`"，**与 ELF 类型无关** → **dlopen 一个 .so 与 exec 一个二进制走同一套签名校验**。而 JNI 库默认是"从 jar 解压 .so 到 `java.io.tmpdir` 再 `System.load()`"，**tmpdir 不在签名范围内 → 必被拦** |
+
+**解法（三步）**：
+
+1. **用 OHOS 工具链交叉编译**这些 JNI 库（zstd-jni 有公开 OHOS 编译先例，见专项文档 §5）
+2. **放进 `electron/libs/arm64-v8a/`**
+   - ★ 必须是 **`electron`（entry）** 模块；不要放 `web_engine`（har）
+   - 🚫 **千万不要**放 `web_engine/src/main/resources/resfile/` —— **官方 HNP 文档里被 XPM 拦下的例子正是该目录**（`resfile/` 不以 `libs/` 开头，不进 fsv-sig 签名链路）
+   - 只有 `libs/` 前缀下的原生文件才会被 hapsigner 自动做代码签名（`SoInfoSegment` → 安装期 fs-verity），从而通过 XPM
+   - 安装后沙箱路径：`/data/storage/el1/bundle/libs/arm64/`（**ABI 目录名从 `arm64-v8a` 变成 `arm64`**）
+3. **模板已默认注入搜索路径**（`main.js` 的 `JVM_ARGS`）：
+   ```js
+   '-Djava.library.path=/data/storage/el1/bundle/libs/arm64',
+   ```
+   加上后 JNI 走 `System.loadLibrary` 直接命中 libs 目录，**完全不做解压**，从根上避开 XPM；且**一并覆盖 lz4/snappy 等所有 JNI 库**。
+
+**验证**：
+```bash
+unzip -l electron-default-unsigned.hap | grep libs/arm64-v8a        # 1) 确实打进 HAP
+hdc shell ls /data/app/el1/bundle/public/<bundleName>/libs/arm64/   # 2) 安装后落地
+hdc shell hilog | grep -i "get signature info failed"               # 3) 应无输出（未被 XPM 拦）
+```
+
+> 完整机制、报错判读表（4 种根因各不相同）、合规路径对照表与交叉编译流程见
+> 《鸿蒙PC迁移专项_Java加载jar内原生库so机制与方案.md》。
 
 ### 窗口形态（鸿蒙 vs Windows 的关键差异）
 - Electron 的 `frame` 在鸿蒙上映射为**系统窗口装饰**：`frame:true` → 系统标题栏 + 窗口边框出现（看起来像"模板窗口成了应用的外框"）。

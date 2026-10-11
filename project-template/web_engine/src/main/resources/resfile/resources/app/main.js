@@ -38,6 +38,14 @@ log.info(`boot: platform=${platform.rawPlatform} → ${platform.name} | arch=${p
 });
 
 
+/* ---------- 鸿蒙形态 B：应用的 native 库目录（JNI 加载关键，详见 CONFIG.JVM_ARGS 处注释） ----------
+ * HAP 里 electron/libs/arm64-v8a/ 下的原生库，安装后落在应用沙箱的这个路径。
+ * 注意：ABI 目录名在设备上从 arm64-v8a 变成 arm64（不是笔误）。
+ * 若你的工程装了多个模块或开了 libIsolation，路径可能多一层，可用
+ *   nsenter -t <electron进程号> -m sh    →  ls /data/storage/el1/bundle/libs/arm64/
+ * 确认真实路径后再改这里。 */
+const OHOS_NATIVE_LIB_DIR = '/data/storage/el1/bundle/libs/arm64';
+
 /* ============ CONFIG（模板配置区） ============ */
 const CONFIG = {
   // 后端服务地址（渲染层无感知，统一走虚拟域名）
@@ -53,7 +61,36 @@ const CONFIG = {
 
   // 形态 B 的自包含 JDK（HNP 打包后）java 路径与 JVM 参数
   EMBEDDED_JAVA: '/data/app/bin/java',          // 软链（调试）或 /data/app/<bundle>/jdk17_1.0/bin/java（上架）
-  JVM_ARGS: ['-Xmx256m'],                        // JIT 权限未获批时追加 '-Xint'
+  JVM_ARGS: [
+    '-Xmx256m',                                  // JIT 权限未获批时追加 '-Xint'
+
+    // ★★ 鸿蒙形态 B 必需：把「应用的 native 库目录」加进 JNI 搜索路径。
+    //
+    // 不加会怎样：多数 JNI 库（zstd-jni / snappy-java / lz4-java / sqlite-jdbc …）的加载方式是
+    //   "把 .so 从 jar 解压到 java.io.tmpdir，再 System.load()"。
+    //   而鸿蒙的 XPM 内核管控 hook 的是 mmap_region / file_mprotect，判定只看
+    //   "文件映射 + PROT_EXEC"，与 ELF 类型无关 —— 即 dlopen 一个 .so 与 exec 一个二进制
+    //   走的是同一套签名校验。tmpdir 不在签名范围内 → 必然被拦。
+    //
+    // 加上之后：JNI 走 System.loadLibrary 直接命中 libs 目录，完全不做解压，从根上避开；
+    //   同时也一并覆盖 lz4-java / snappy-java 等其它 JNI 库（只配 zstd 专用参数救不了它们）。
+    //
+    // 怎么放（工程侧）：把交叉编译好的 JNI 库放进
+    //   electron/libs/arm64-v8a/lib<name>.so
+    //   ★ 必须放 electron（entry）模块；不要放 web_engine（har）。
+    //   🚫 千万不要放 web_engine/src/main/resources/resfile/ —— 官方 HNP 文档里被 XPM
+    //      拦下的例子正是该目录（resfile/ 不以 libs/ 开头，不进 fsv-sig 签名链路）。
+    //   安装后沙箱路径就是下面这个（注意 ABI 目录名从 arm64-v8a 变成 arm64）。
+    //
+    // 详见《鸿蒙PC迁移专项_Java加载jar内原生库so机制与方案.md》§4、§5「形态 B 实战配方」。
+    `-Djava.library.path=${OHOS_NATIVE_LIB_DIR}`,
+
+    // 可选「双保险」：zstd-jni 的显式路径（对应其 ZstdNativePath 系统属性）。
+    // ⚠️ 默认关闭。一旦设置，zstd-jni 会直接 System.load 该文件且【不再回退】——
+    //    文件名必须与你的 zstd-jni jar 版本严格一致，写错会立刻抛 UnsatisfiedLinkError。
+    //    确认文件名后再启用（通常上面那行 java.library.path 就够了）：
+    // `-DZstdNativePath=${OHOS_NATIVE_LIB_DIR}/libzstd-jni-<你的jar版本>.so`,
+  ],
 
   // 启动窗口
   WINDOW: {
